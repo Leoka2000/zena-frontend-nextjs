@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { setToken } from "@/lib/auth"
 import Image from "next/image"
+import Link from "next/link"
 
 export function RegisterForm({ className, ...props }: React.ComponentProps<"div">) {
   const router = useRouter()
@@ -90,9 +91,21 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
                 {loading ? "Please wait" : "Register"}
               </Button>
             </div>
+              <div className="mt-4 text-center text-sm">
+              already have an account?{" "}
+          
+       <Link href="/login" className="underline underline-offset-4">
+                Login
+       
+              </Link>
+            </div>
           </form>
         </CardContent>
       </Card>
+        <div className="text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">
+        By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
+        and <a href="#">Privacy Policy</a>.
+      </div>
     </div>
   )
 }

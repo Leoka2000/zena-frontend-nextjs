@@ -33,8 +33,6 @@ export default function RootLayout({
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <div>
-            {/* Optional: Always visible in top-right corner */}
-        
           </div>
           {children}
         </ThemeProvider>

@@ -1,10 +1,11 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
+import Link from "next/link"
 import {
   Card,
   CardContent,
@@ -16,7 +17,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircleIcon, Loader2Icon } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { setToken } from "@/lib/auth"
+import { setToken, isAuthenticated } from "@/lib/auth"
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
   const router = useRouter()
@@ -24,6 +25,13 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+
+  // 👇 Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated()) {
+      router.replace("/dashboard")
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,7 +48,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
       if (res.ok) {
         const data = await res.json()
         setToken(data.token)
-        router.push("/dashboard")
+        router.push("/dashboard") // 👈 Redirect after login
       } else {
         setError("Invalid credentials")
       }
@@ -76,13 +84,28 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
                 <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
               <div className="grid gap-2 mb-6">
+                <a
+                    href="#"
+                    className="ml-auto inline-block gap-0 text-sm underline-offset-4 hover:underline"
+                  >
+                    Forgot your password?
+                  </a>
                 <Label htmlFor="password">Password</Label>
+                
                 <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
                 {loading ? "Please wait" : "Login"}
               </Button>
+            </div>
+             <div className="mt-4 text-center text-sm">
+              Don&apos;t have an account?{" "}
+          
+       <Link href="/register" className="underline underline-offset-4">
+                Sign up
+       
+              </Link>
             </div>
           </form>
         </CardContent>
