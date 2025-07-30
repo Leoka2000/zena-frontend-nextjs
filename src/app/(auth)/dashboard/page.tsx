@@ -1,3 +1,8 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { getToken } from "@/lib/auth"
 import { AppSidebar } from "@/components/app-sidebar"
 import {
   Breadcrumb,
@@ -13,8 +18,29 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { toast } from "sonner"
 
-export default function Page() {
+export default function DashboardPage() {
+  const router = useRouter()
+  const [checkedAuth, setCheckedAuth] = useState(false)
+
+  useEffect(() => {
+    const token = getToken()
+    if (!token) {
+      console.warn("No token found in local storage.")
+      router.push("/login")
+    } else {
+      console.log("Bearer token:", token)
+      toast.success("Welcome! You are now logged in.", {
+        description: "Token stored and access granted.",
+      })
+    }
+
+    setCheckedAuth(true)
+  }, [router])
+
+  if (!checkedAuth) return null // Prevent flash of dashboard during redirect
+
   return (
     <SidebarProvider>
       <AppSidebar />

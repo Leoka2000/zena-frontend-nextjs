@@ -1,28 +1,35 @@
 "use client"
 
-import { useState } from "react"
-import { logout } from "@/lib/auth"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Loader2Icon } from "lucide-react"
+import { logout } from "@/lib/auth"
 
 export function LogoutButton() {
-  const [loading, setLoading] = useState(false)
+  const router = useRouter()
 
   const handleLogout = async () => {
-    setLoading(true)
     try {
-      await logout()
+      // Simple POST request without any headers or token
+      await fetch("http://localhost:8080/auth/logout", {
+        method: "POST",
+        credentials: "include", // Only needed if using cookies
+      });
+
+      // Always clear client-side state and redirect
+      logout();
+      router.push("/");
+      router.refresh(); // Clear any cached state
     } catch (error) {
-      console.error("Logout failed:", error)
-    } finally {
-      setLoading(false)
+      console.error("Logout error:", error);
+      // Ensure we clean up even if the request fails
+      logout();
+      router.push("/");
     }
   }
 
   return (
-    <Button variant="destructive" onClick={handleLogout} disabled={loading}>
-      {loading && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
-      {loading ? "Logging out..." : "Logout"}
+    <Button onClick={handleLogout} variant="destructive">
+      Logout
     </Button>
   )
 }

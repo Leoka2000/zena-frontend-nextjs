@@ -1,8 +1,26 @@
+"use client"
 import Image from "next/image"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { createClient } from '@/utils/supabase/server'
+
+import { getToken } from "@/lib/auth"
+
 
 export default function Home() {
+   const [checkedAuth, setCheckedAuth] = useState(false)
+
+  useEffect(() => {
+    const token = getToken()
+    if (!token) {
+      console.warn("No token found in local storage.")
+    } else {
+      console.log("Bearer token:", token)
+    }
+    setCheckedAuth(true)
+  })
+  
   return (
     <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
       <main className="flex flex-col gap-6 row-start-2 items-center sm:items-start">

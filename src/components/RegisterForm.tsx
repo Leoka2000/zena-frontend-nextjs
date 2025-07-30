@@ -5,17 +5,12 @@ import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+  Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircleIcon, Loader2Icon } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { setToken } from "@/lib/auth"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -28,32 +23,37 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
+  e.preventDefault()
+  setLoading(true)
+  setError("")
 
-    try {
-      const res = await fetch("http://localhost:8080/req/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, username }),
-      })
+  try {
+    const res = await fetch("http://localhost:8080/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, username }),
+    })
 
-      if (res.ok) {
-        const data = await res.json()
-        setToken(data.token)
-        router.push("/dashboard")
+    const text = await res.text()
+
+    if (res.ok) {
+      router.push("/verify-email?email=" + encodeURIComponent(email))
+    } else {
+      // Custom error message handling
+      if (text.includes("Username already exists")) {
+        setError("This username is already taken.")
+      } else if (text.includes("Email already exists")) {
+        setError("An account with this email already exists.")
       } else {
-        const text = await res.text()
-        setError(text)
+        setError("Registration failed: " + text)
       }
-    } catch (err) {
-      setError("An unexpected error occurred.")
-    } finally {
-      setLoading(false)
     }
+  } catch (err) {
+    setError("An unexpected error occurred.")
+  } finally {
+    setLoading(false)
   }
-
+}
   return (
     <div className={cn("flex flex-col gap-6 w-full md:w-96", className)} {...props}>
       <Card>
@@ -61,7 +61,6 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
         <CardHeader>
           <CardTitle>Create an account</CardTitle>
           <CardDescription>Sign up with your email and password</CardDescription>
-
           {error && (
             <Alert variant="destructive">
               <AlertCircleIcon className="h-4 w-4" />
@@ -75,7 +74,7 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
             <div className="flex flex-col gap-5">
               <div className="grid gap-2">
                 <Label htmlFor="username">Username</Label>
-                <Input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} required />
+                <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} required />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
@@ -91,20 +90,17 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
                 {loading ? "Please wait" : "Register"}
               </Button>
             </div>
-              <div className="mt-4 text-center text-sm">
-              already have an account?{" "}
-          
-       <Link href="/login" className="underline underline-offset-4">
-                Login
-       
-              </Link>
+            <div className="mt-4 text-center text-sm">
+              Already have an account?{" "}
+              <Link href="/login" className="underline underline-offset-4">Login</Link>
             </div>
           </form>
         </CardContent>
       </Card>
-        <div className="text-muted-foreground *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">
-        By clicking continue, you agree to our <a href="#">Terms of Service</a>{" "}
-        and <a href="#">Privacy Policy</a>.
+      <div className="text-muted-foreground text-center text-xs">
+        By clicking continue, you agree to our{" "}
+        <a href="https://ztrackmap.com/terms-and-conditions/" target="_blank">Terms of Service</a>{" "}
+        and <a href="../../public/adatkezelesi-hozzajarulas.pdf" download target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
       </div>
     </div>
   )

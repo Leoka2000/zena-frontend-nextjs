@@ -8,6 +8,7 @@ import {
   LogOut,
   Sparkles,
 } from "lucide-react"
+
 import {
   Avatar,
   AvatarFallback,
@@ -28,54 +29,18 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { LogoutButton } from "./LogoutButton"
 
-import { useEffect, useState } from "react"
-
-export function NavUser() {
+export function NavUser({
+  user,
+}: {
+  user: {
+    name: string
+    email: string
+    avatar: string
+  }
+}) {
   const { isMobile } = useSidebar()
-  const [user, setUser] = useState<{ name: string; email: string; avatar: string }>({
-    name: "Loading...",
-    email: "",
-    avatar: "/default-avatar.png", // Replace with your default avatar
-  })
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const token = localStorage.getItem("token")
-      if (!token) return
-
-      try {
-        const res = await fetch("http://localhost:8080/api/me", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            
-          },
-          
-        })
-             console.log("Token being sent:", token)
-
-        if (res.ok) {
-          const data = await res.json()
-        
-          setUser({
-            name: data.username,
-            email: data.email,
-            avatar: "/default-avatar.png", // or data.avatar if you support it
-          })
-        } else {
-          console.error("Failed to fetch user")
-      
-        }
-      } catch (err) {
-        console.error("Error fetching user:", err)
-      
-      }
-    }
-
-    fetchUser()
-   
-  }, [])
-  
 
   return (
     <SidebarMenu>
@@ -139,8 +104,10 @@ export function NavUser() {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
-              <LogOut />
-              Log out
+              <LogoutButton
+                />
+         
+           
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
