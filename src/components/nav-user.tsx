@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   BadgeCheck,
@@ -7,13 +7,9 @@ import {
   CreditCard,
   LogOut,
   Sparkles,
-} from "lucide-react"
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
-import { useEffect, useState } from "react"
+} from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useEffect, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,58 +18,60 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar"
-import { LogoutButton } from "./LogoutButton"
-import { AppUser } from "@/types/AppUser"
-import { getToken } from "@/lib/auth"
-import { Skeleton } from "@/components/ui/skeleton"
+} from "@/components/ui/sidebar";
+import { LogoutButton } from "./LogoutButton";
+import { AppUser } from "@/types/AppUser";
+import { getToken } from "@/lib/auth";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function NavUser() {
-  const { isMobile } = useSidebar()
-  const [user, setUser] = useState<AppUser | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { isMobile } = useSidebar();
+  const [user, setUser] = useState<AppUser | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        setLoading(true)
-        setError(null)
-        
-        const token = getToken()
+        setLoading(true);
+        setError(null);
+
+        const token = getToken();
         if (!token) {
-          throw new Error("No authentication token found")
+          throw new Error("No authentication token found");
         }
 
         const response = await fetch("http://localhost:8080/users/me", {
           headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-          }
-        })
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
 
         if (!response.ok) {
-          throw new Error(`Failed to fetch user: ${response.status}`)
+          throw new Error(`Failed to fetch user: ${response.status}`);
         }
 
-        const userData = await response.json()
-        setUser(userData)
+        const userData = await response.json();
+        setUser(userData);
       } catch (err) {
-        console.error("Error fetching user:", err)
-        setError(err instanceof Error ? err.message : "Failed to fetch user data")
+        console.error("Error fetching user:", err);
+        setError(
+          err instanceof Error ? err.message : "Failed to fetch user data"
+        );
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchUser()
-  }, [])
+    fetchUser();
+  }, []);
 
   if (loading) {
     return (
@@ -89,7 +87,7 @@ export function NavUser() {
           </div>
         </SidebarMenuItem>
       </SidebarMenu>
-    )
+    );
   }
 
   if (error || !user) {
@@ -104,12 +102,12 @@ export function NavUser() {
           </div>
         </SidebarMenuItem>
       </SidebarMenu>
-    )
+    );
   }
 
   const getInitials = (username: string) => {
-    return username.slice(0, 2).toUpperCase()
-  }
+    return username.slice(0, 2).toUpperCase();
+  };
 
   return (
     <SidebarMenu>
@@ -121,7 +119,6 @@ export function NavUser() {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-             
                 <AvatarFallback className="rounded-lg">
                   {getInitials(user.username)}
                 </AvatarFallback>
@@ -142,7 +139,6 @@ export function NavUser() {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-     
                   <AvatarFallback className="rounded-lg">
                     {getInitials(user.username)}
                   </AvatarFallback>
@@ -154,13 +150,13 @@ export function NavUser() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-          
+
             <DropdownMenuGroup>
               <DropdownMenuItem>
                 <BadgeCheck className="mr-2 h-4 w-4" />
                 Account
               </DropdownMenuItem>
-             
+
               <DropdownMenuItem>
                 <Bell className="mr-2 h-4 w-4" />
                 Notifications
@@ -174,5 +170,5 @@ export function NavUser() {
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }
