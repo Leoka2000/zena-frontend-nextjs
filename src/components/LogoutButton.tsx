@@ -1,11 +1,13 @@
-"use client"
+"use client";
 
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { logout } from "@/lib/auth"
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { logout } from "@/lib/auth";
+import { DropdownMenuItem } from "./ui/dropdown-menu";
+import { LogOut } from "lucide-react";
 
 export function LogoutButton() {
-  const router = useRouter()
+  const router = useRouter();
 
   const handleLogout = async () => {
     try {
@@ -25,11 +27,14 @@ export function LogoutButton() {
       logout();
       router.push("/");
     }
-  }
+  };
 
   return (
-    <Button onClick={handleLogout} variant="destructive">
-      Logout
-    </Button>
-  )
+    <a onClick={handleLogout}>
+      <DropdownMenuItem  variant="destructive">
+        <LogOut />
+        Log out
+      </DropdownMenuItem>
+    </a>
+  );
 }
