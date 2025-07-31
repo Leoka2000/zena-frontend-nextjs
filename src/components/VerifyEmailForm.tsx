@@ -11,6 +11,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import { AlertCircleIcon, Loader2Icon } from "lucide-react"
 import router from "next/router"
@@ -51,51 +59,67 @@ export function VerifyEmailForm() {
     }
   }
 
-  
-
   return (
     <>
-      <form onSubmit={handleVerify} className="w-full max-w-md space-y-6">
-        <h1 className="text-xl font-semibold text-center">
-          Please verify your email box and paste here the verification code sent to you.
-        </h1>
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Email Verification</CardTitle>
+          <CardDescription>
+            Paste the code sent to <span className="font-medium">{email}</span> below.
+          </CardDescription>
+        </CardHeader>
 
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircleIcon className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+        <CardContent>
+          <form onSubmit={handleVerify} className="space-y-6">
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircleIcon className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-        <div className="grid gap-2">
-          <Label htmlFor="code">Verification Code</Label>
-          <Input id="code" value={verificationCode} onChange={(e) => setVerificationCode(e.target.value)} required />
-        </div>
+            <div className="grid gap-2">
+              <Label htmlFor="code">Verification Code</Label>
+              <Input
+                id="code"
+                value={verificationCode}
+                onChange={(e) => setVerificationCode(e.target.value)}
+                required
+              />
+            </div>
 
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
-          {loading ? "Verifying..." : "Verify"}
-        </Button>
-      </form>
+            <CardFooter className="p-0 flex-col gap-2">
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading && (
+                  <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {loading ? "Verifying..." : "Verify"}
+              </Button>
+            </CardFooter>
+          </form>
+        </CardContent>
+      </Card>
 
-      <Dialog open={successDialogOpen} onOpenChange={(open) => {
-  setSuccessDialogOpen(open)
-  if (!open) {
-    router.push("/login") // Redirect when user closes the dialog
-  }
-}}>
+      <Dialog
+        open={successDialogOpen}
+        onOpenChange={(open) => {
+          setSuccessDialogOpen(open)
+          if (!open) {
+            router.push("/login")
+          }
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Login Successful</DialogTitle>
+            <DialogTitle>Verification Successful</DialogTitle>
           </DialogHeader>
-          <p className="text-center">You have successfully verified your account. You can now log in.</p>
-          <Link href="/login" className="text-blue-500 hover:underline">
-            <Button type="submit" className="w-full" disabled={loading}>
-          {loading && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
-          {loading ? "Verifying..." : "Login"}
-        </Button>
-        </Link>
+          <p className="text-center">
+            You have successfully verified your account. You can now log in.
+          </p>
+          <Link href="/login" className="w-full">
+            <Button className="w-full mt-4">Login</Button>
+          </Link>
         </DialogContent>
       </Dialog>
     </>

@@ -1,3 +1,23 @@
+export async function fetchCurrentUser() {
+  const token = getToken()
+
+  if (!token) {
+    throw new Error("No auth token found")
+  }
+
+  const res = await fetch("http://localhost:8080/users/me", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch user")
+  }
+
+  return res.json()
+}
 
 export const getToken = () => {
   if (typeof window === "undefined") return null
