@@ -29,6 +29,7 @@ import { LogoutButton } from "./LogoutButton";
 import { AppUser } from "@/types/AppUser";
 import { getToken } from "@/lib/auth";
 import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
 
 export function NavUser() {
   const { isMobile } = useSidebar();
@@ -152,10 +153,14 @@ export function NavUser() {
             <DropdownMenuSeparator />
 
             <DropdownMenuGroup>
+                <Link href="/account">
               <DropdownMenuItem>
+              
                 <BadgeCheck className="mr-2 h-4 w-4" />
                 Account
+           
               </DropdownMenuItem>
+               </Link>
 
               <DropdownMenuItem>
                 <Bell className="mr-2 h-4 w-4" />

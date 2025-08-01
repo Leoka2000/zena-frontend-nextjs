@@ -2,6 +2,7 @@
 
 import {
   Album,
+  Bell,
   ChevronRight,
   LayoutDashboard,
   type LucideIcon,
@@ -23,6 +24,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
+import Link from "next/link";
 
 export function NavMain({
   items,
@@ -42,16 +44,24 @@ export function NavMain({
     <SidebarGroup>
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
       <SidebarMenu>
-        <SidebarMenuItem>
-          <SidebarMenuButton className="cursor-pointer">
-            <LayoutDashboard />
-            Dashboard
-          </SidebarMenuButton>
-        </SidebarMenuItem>
+        <Link href="dashboard">
+          <SidebarMenuItem>
+            <SidebarMenuButton className="cursor-pointer">
+              <LayoutDashboard />
+              Dashboard
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </Link>
         <SidebarMenuItem>
           <SidebarMenuButton className="cursor-pointer">
             <Album />
             Records
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+        <SidebarMenuItem>
+          <SidebarMenuButton className="cursor-pointer">
+            <Bell />
+            Notifications
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>

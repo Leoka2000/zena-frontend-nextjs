@@ -1,16 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { getToken } from "@/lib/auth";
 import { AppSidebar } from "@/components/app-sidebar";
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -18,8 +13,10 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { toast } from "sonner";
+
 import DashboardContent from "../DashboardContent";
+import AccountContent from "../AccountContent";
+import ChangePasswordForm from "../ChangePassword";
 
 export default function DashboardPage() {
   return (
@@ -36,13 +33,16 @@ export default function DashboardPage() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">Dashboard</BreadcrumbLink>
+                  <BreadcrumbLink href="#">Account</BreadcrumbLink>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
         </header>
-        <DashboardContent />
+
+          <AccountContent />
+          <ChangePasswordForm />
+     
       </SidebarInset>
     </SidebarProvider>
   );

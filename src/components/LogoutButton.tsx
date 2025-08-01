@@ -30,7 +30,7 @@ export function LogoutButton() {
   };
 
   return (
-    <a onClick={handleLogout}>
+    <a className="w-full" onClick={handleLogout}>
       <DropdownMenuItem  variant="destructive">
         <LogOut />
         Log out
