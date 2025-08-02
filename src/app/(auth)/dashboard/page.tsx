@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/sidebar";
 import { toast } from "sonner";
 import DashboardContent from "../DashboardContent";
+import { Bluetooth } from "lucide-react";
+import BluetoothConnectButton from "@/components/BluetoothConnectButton";
 
 export default function DashboardPage() {
   return (
@@ -42,6 +44,7 @@ export default function DashboardPage() {
             </Breadcrumb>
           </div>
         </header>
+  
         <DashboardContent />
       </SidebarInset>
     </SidebarProvider>
