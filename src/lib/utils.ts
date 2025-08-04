@@ -52,3 +52,11 @@ export function parseAllSensorData(hexString: string) {
     accelerometer: parseAccelerometerHexData(hexString),
   }
 }
+
+
+export function parseBatteryVoltageHex(hexString: string) {
+  const cleanHex = hexString.startsWith("0x") ? hexString.slice(2) : hexString;
+  const batteryHex = cleanHex.slice(56, 60);
+  const batteryRaw = parseInt(batteryHex, 16);
+  return batteryRaw / 1000; // Return just the voltage number (e.g., 3.485)
+}

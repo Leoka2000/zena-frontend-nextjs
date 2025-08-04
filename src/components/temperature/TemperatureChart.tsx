@@ -53,13 +53,24 @@ const ranges = [
   { label: "Last 30 days", value: "month" },
   { label: "Last 3 months", value: "3months" },
 ]
+interface ChartLineInteractiveProps {
+  temperature: number | null
+  timestamp: number | null
+  status: string
+}
 
 export const ChartLineInteractive = ({
-  temperature,
+ temperature,
   timestamp,
+  status,
 }: ChartLineInteractiveProps) => {
   const [data, setData] = React.useState<TemperatureDataPoint[]>([])
   const [range, setRange] = React.useState("day")
+
+  const statusColorClass =
+    status === "Disconnected"
+      ? "text-red-600 dark:text-red-400"
+      : "text-green-600 dark:text-green-300";
 
  const fetchHistoricalData = React.useCallback(async (selectedRange: string) => {
   try {
@@ -119,7 +130,9 @@ export const ChartLineInteractive = ({
       <CardHeader className="flex z-10 flex-col items-stretch border-b !p-0 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-1 py-4 mb-4 px-6 pb-3 sm:pb-0">
           <CardTitle>Temperature Monitor</CardTitle>
-          <p className="leading-4 text-sm py-1">Real-time + historical Bluetooth temperature data</p>
+          <p className="leading-4 text-sm py-1"> <span className={`text-sm font-semibold ${statusColorClass}`}>
+              {status}
+            </span></p>
         </div>
 
        <div className="flex flex-col justify-center gap-1 px-6 py-4">

@@ -18,42 +18,50 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [username, setUsername] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault()
-  setLoading(true)
-  setError("")
+    e.preventDefault()
+    setError("")
 
-  try {
-    const res = await fetch("http://localhost:8080/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, username }),
-    })
-
-    const text = await res.text()
-
-    if (res.ok) {
-      router.push("/verify-email?email=" + encodeURIComponent(email))
-    } else {
-      // Custom error message handling
-      if (text.includes("Username already exists")) {
-        setError("This username is already taken.")
-      } else if (text.includes("Email already exists")) {
-        setError("An account with this email already exists.")
-      } else {
-        setError("Registration failed: " + text)
-      }
+    // Front-end password match check
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.")
+      return
     }
-  } catch (err) {
-    setError("An unexpected error occurred.")
-  } finally {
-    setLoading(false)
+
+    setLoading(true)
+
+    try {
+      const res = await fetch("http://localhost:8080/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, username }),
+      })
+
+      const text = await res.text()
+
+      if (res.ok) {
+        router.push("/verify-email?email=" + encodeURIComponent(email))
+      } else {
+        if (text.includes("Username already exists")) {
+          setError("This username is already taken.")
+        } else if (text.includes("Email already exists")) {
+          setError("An account with this email already exists.")
+        } else {
+          setError("Registration failed: " + text)
+        }
+      }
+    } catch (err) {
+      setError("An unexpected error occurred.")
+    } finally {
+      setLoading(false)
+    }
   }
-}
+
   return (
     <div className={cn("flex flex-col gap-6 w-full md:w-96", className)} {...props}>
       <Card>
@@ -80,9 +88,13 @@ export function RegisterForm({ className, ...props }: React.ComponentProps<"div"
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
-              <div className="grid gap-2 mb-5">
+              <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
                 <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              </div>
+              <div className="grid gap-2 mb-5">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>

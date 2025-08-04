@@ -6,7 +6,11 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { parseAccelerometerHexData, parseTemperatureHex } from "../lib/utils";
+import {
+  parseAccelerometerHexData,
+  parseTemperatureHex,
+  parseBatteryVoltageHex,
+} from "../lib/utils";
 import { getToken } from "@/lib/auth";
 
 const BluetoothSensorContext = createContext(null);
@@ -21,6 +25,7 @@ export const BluetoothSensorProvider = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [temperatureData, setTemperatureData] = useState(null);
   const [accelerometerData, setAccelerometerData] = useState(null);
+  const [voltageData, setVoltageData] = useState(null);
 
   const notifyCharRef = useRef(null);
   const writeCharRef = useRef(null);
@@ -52,59 +57,78 @@ export const BluetoothSensorProvider = ({ children }) => {
     }
   }, []);
 
- const handleCharacteristicValueChanged = useCallback(async (event) => {
+  const handleCharacteristicValueChanged = useCallback(async (event) => {
     const value = event.target.value;
+
     let hexString = "0x";
     for (let i = 0; i < value.byteLength; i++) {
-        hexString += ("00" + value.getUint8(i).toString(16)).slice(-2);
+      hexString += ("00" + value.getUint8(i).toString(16)).slice(-2);
     }
-
+    console.log("📦 Received HEX data from Bluetooth device:", hexString);
     try {
-        const parsedTemperature = parseTemperatureHex(hexString);
-        const parsedAccelerometer = parseAccelerometerHexData(hexString);
-        const token = getToken();
-        const timestamp = Math.floor(Date.now() / 1000); // Current Unix timestamp
+      const parsedTemperature = parseTemperatureHex(hexString);
+      const parsedAccelerometer = parseAccelerometerHexData(hexString);
+      const batteryData = parseBatteryVoltageHex(hexString);
+      console.log("🔋 Battery Level:", batteryData.voltage);
+      const token = getToken();
+      const timestamp = Math.floor(Date.now() / 1000); // Current Unix timestamp
 
-        // Save temperature if available
-        if (parsedTemperature?.temperature) {
-            setTemperatureData(parsedTemperature);
-            await fetch("http://localhost:8080/api/temperature", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    temperature: parsedTemperature.temperature,
-                    timestamp: timestamp
-                }),
-            });
-        }
+      // Save temperature if available
+      if (parsedTemperature?.temperature) {
+        setTemperatureData(parsedTemperature);
+        await fetch("http://localhost:8080/api/temperature", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            temperature: parsedTemperature.temperature,
+            timestamp: timestamp,
+          }),
+        });
+      }
 
-        // Save accelerometer if available
-        if (parsedAccelerometer?.x !== undefined) {
-            setAccelerometerData(parsedAccelerometer);
-            await fetch('http://localhost:8080/api/accelerometer', {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    x: parsedAccelerometer.x,
-                    y: parsedAccelerometer.y,
-                    z: parsedAccelerometer.z,
-                    timestamp: timestamp
-                }),
-            });
-        }
+      // Save accelerometer if available
+      if (parsedAccelerometer?.x !== undefined) {
+        setAccelerometerData(parsedAccelerometer);
+        await fetch("http://localhost:8080/api/accelerometer", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            x: parsedAccelerometer.x,
+            y: parsedAccelerometer.y,
+            z: parsedAccelerometer.z,
+            timestamp: timestamp,
+          }),
+        });
+      }
 
-        setStatus("Receiving data...");
+      if (batteryData !== undefined && batteryData !== null) {
+        const timestamp = Math.floor(Date.now() / 1000); // already defined earlier
+        setVoltageData({ voltage: batteryData, timestamp }); // ✅ Include timestamp here
+        await fetch("http://localhost:8080/api/voltage", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            voltage: batteryData,
+            timestamp,
+          }),
+        });
+      }
+
+      setStatus("Receiving data...");
     } catch (error) {
-        console.error("Error processing device data:", error);
-        setStatus("Failed to process data");
+      console.error("Error processing device data:", error);
+      setStatus("Failed to process data");
     }
-}, []);
+  }, []);
 
   const connectBluetooth = useCallback(async () => {
     if (!navigator.bluetooth) {
@@ -174,6 +198,7 @@ export const BluetoothSensorProvider = ({ children }) => {
     setIsConnected(false);
     setTemperatureData(null);
     setAccelerometerData(null);
+    setVoltageData(null);
     setDevice(null);
     setStatus("Disconnected");
   }, [device, handleCharacteristicValueChanged, stopWriteInterval]);
@@ -191,6 +216,7 @@ export const BluetoothSensorProvider = ({ children }) => {
         isConnected,
         temperatureData,
         accelerometerData,
+        voltageData,
         connectBluetooth,
         disconnectBluetooth,
       }}

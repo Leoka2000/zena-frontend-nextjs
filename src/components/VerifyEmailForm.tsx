@@ -1,7 +1,7 @@
 "use client"
 
 import { useSearchParams } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -23,6 +23,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import { AlertCircleIcon, Loader2Icon } from "lucide-react"
 import router from "next/router"
 import Link from "next/link"
+import { toast } from "sonner"
 
 export function VerifyEmailForm() {
   const searchParams = useSearchParams()
@@ -32,6 +33,17 @@ export function VerifyEmailForm() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [successDialogOpen, setSuccessDialogOpen] = useState(false)
+
+  const [resendLoading, setResendLoading] = useState(false)
+  const [resendCooldown, setResendCooldown] = useState(30)
+
+  // Countdown effect
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown((prev) => prev - 1), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [resendCooldown])
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,6 +68,29 @@ export function VerifyEmailForm() {
       setError("An unexpected error occurred.")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleResend = async () => {
+    setResendLoading(true)
+    setError("")
+
+    try {
+      const res = await fetch(`http://localhost:8080/auth/resend?email=${email}`, {
+        method: "POST",
+      })
+      const text = await res.text()
+
+      if (!res.ok) {
+        setError(text)
+      } else {
+        setResendCooldown(30)
+        toast.success("Verification email sent!")
+      }
+    } catch {
+      setError("Failed to resend code. Please try again.")
+    } finally {
+      setResendLoading(false)
     }
   }
 
@@ -91,10 +126,27 @@ export function VerifyEmailForm() {
 
             <CardFooter className="p-0 flex-col gap-2">
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading && (
-                  <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                )}
+                {loading && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
                 {loading ? "Verifying..." : "Verify"}
+              </Button>
+
+              <Button
+                variant="ghost"
+                type="button"
+                className="w-full text-sm text-muted-foreground"
+                onClick={handleResend}
+                disabled={resendLoading || resendCooldown > 0}
+              >
+                {resendLoading ? (
+                  <>
+                    <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                    Resending...
+                  </>
+                ) : resendCooldown > 0 ? (
+                  `Resend available in ${resendCooldown}s`
+                ) : (
+                  "Resend Verification Code"
+                )}
               </Button>
             </CardFooter>
           </form>
