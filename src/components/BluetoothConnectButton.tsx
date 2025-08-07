@@ -34,7 +34,7 @@ const BluetoothConnectButton = () => {
           onClick={connectBluetooth}
           className="max-w-3xs cursor-pointer"
         >
-          <Bluetooth className="mr-2 h-4 w-4" />
+          <Bluetooth className="mr-2  h-4 w-4" />
           Connect to Bluetooth Device
         </Button>
       ) : (

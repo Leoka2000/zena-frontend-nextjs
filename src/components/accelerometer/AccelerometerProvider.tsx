@@ -6,7 +6,7 @@ const AccelerometerProvider = () => {
   const { accelerometerData: liveData, status } = useBluetoothSensor()
 
   return (
-    <div className="p-4 mb-2 dark:bg-neutral-950 rounded-lg h-full mx-auto">
+    <div className=" mb-2  rounded-lg h-full mx-auto">
       <AccelerometerChart liveData={liveData} status={status} />
     </div>
   )

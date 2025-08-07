@@ -31,7 +31,7 @@ export function LogoutButton() {
 
   return (
     <a className="w-full" onClick={handleLogout}>
-      <DropdownMenuItem  variant="destructive">
+      <DropdownMenuItem >
         <LogOut />
         Log out
       </DropdownMenuItem>

@@ -193,7 +193,7 @@ export const AccelerometerChart = ({
               stroke="var(--chart-1)"
               strokeWidth={2}
               dot={false}
-              isAnimationActive={false}
+              isAnimationActive={true}
             />
             <Line
               type="monotone"
@@ -201,7 +201,7 @@ export const AccelerometerChart = ({
               stroke="var(--chart-2)"
               strokeWidth={2}
               dot={false}
-              isAnimationActive={false}
+              isAnimationActive={true}
             />
             <Line
               type="monotone"
@@ -209,7 +209,7 @@ export const AccelerometerChart = ({
               stroke="var(--chart-3)"
               strokeWidth={2}
               dot={false}
-              isAnimationActive={false}
+              isAnimationActive={true}
             />
           </LineChart>
         </ChartContainer>

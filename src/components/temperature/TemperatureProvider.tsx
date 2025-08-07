@@ -8,7 +8,7 @@ const TemperatureProvider = () => {
   const timestamp = temperatureData?.timestamp ?? null;
 
   return (
-    <div className="p-4 mb-2 dark:bg-neutral-950 h-full rounded-lg mx-auto">
+    <div className="mb-2 h-full rounded-lg mx-auto">
       <ChartLineInteractive 
         temperature={temperature} 
         timestamp={timestamp} 

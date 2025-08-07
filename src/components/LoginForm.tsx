@@ -64,10 +64,10 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
             Enter your email below to login to your account
           </CardDescription>
           {error && (
-            <Alert variant="destructive">
-              <AlertCircleIcon className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
+            <Alert >
+              <AlertCircleIcon className="h-4 w-4 dark:text-red-400 text-red-500" />
+              <AlertTitle className="dark:text-red-400">Error</AlertTitle>
+              <AlertDescription className="dark:text-red-400">{error}</AlertDescription>
             </Alert>
           )}
         </CardHeader>

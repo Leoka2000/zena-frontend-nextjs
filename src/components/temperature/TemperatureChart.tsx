@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,21 +17,20 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-
 } from "@/components/ui/card"
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-
 } from "@/components/ui/chart"
 import axios from "axios"
 import { getToken } from "@/lib/auth";
 
-interface ChartLineInteractiveProps {
+interface ChartAreaInteractiveProps {
   temperature: number | null
   timestamp: number | null
+  status: string
 }
 
 interface TemperatureDataPoint {
@@ -43,7 +42,7 @@ interface TemperatureDataPoint {
 const chartConfig = {
   temperature: {
     label: "Temperature",
-    color: "var(--chart-1)",
+    color: "#fb7185",
   },
 } satisfies ChartConfig
 
@@ -53,17 +52,12 @@ const ranges = [
   { label: "Last 30 days", value: "month" },
   { label: "Last 3 months", value: "3months" },
 ]
-interface ChartLineInteractiveProps {
-  temperature: number | null
-  timestamp: number | null
-  status: string
-}
 
 export const ChartLineInteractive = ({
- temperature,
+  temperature,
   timestamp,
   status,
-}: ChartLineInteractiveProps) => {
+}: ChartAreaInteractiveProps) => {
   const [data, setData] = React.useState<TemperatureDataPoint[]>([])
   const [range, setRange] = React.useState("day")
 
@@ -72,20 +66,20 @@ export const ChartLineInteractive = ({
       ? "text-red-600 dark:text-red-400"
       : "text-green-600 dark:text-green-300";
 
- const fetchHistoricalData = React.useCallback(async (selectedRange: string) => {
-  try {
-    const token = await getToken();
-    const res = await axios.get(`http://localhost:8080/api/temperature/history?range=${selectedRange}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-    setData(res.data);
-  } catch (err) {
-    console.error("Failed to fetch history:", err);
-  }
-}, []);
+  const fetchHistoricalData = React.useCallback(async (selectedRange: string) => {
+    try {
+      const token = await getToken();
+      const res = await axios.get(`http://localhost:8080/api/temperature/history?range=${selectedRange}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      setData(res.data);
+    } catch (err) {
+      console.error("Failed to fetch history:", err);
+    }
+  }, []);
 
   React.useEffect(() => {
     fetchHistoricalData(range)
@@ -121,41 +115,39 @@ export const ChartLineInteractive = ({
     return { current, average, min, max }
   }, [data])
 
-  React.useEffect(() => {
-  console.log("Live accelerometer data received:", data)
-}, [data])
-
   return (
     <Card className="py-4 sm:py-0">
       <CardHeader className="flex z-10 flex-col items-stretch border-b !p-0 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-1 py-4 mb-4 px-6 pb-3 sm:pb-0">
           <CardTitle>Temperature Monitor</CardTitle>
-          <p className="leading-4 text-sm py-1"> <span className={`text-sm font-semibold ${statusColorClass}`}>
+          <p className="leading-4 text-sm py-1">
+            <span className={`text-sm font-semibold ${statusColorClass}`}>
               {status}
-            </span></p>
+            </span>
+          </p>
         </div>
 
-       <div className="flex flex-col justify-center gap-1 px-6 py-4">
-  <label className="text-sm text-muted-foreground mb-1">Range:</label>
-  <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <Button variant="outline" className="text-sm capitalize">
-        {ranges.find(r => r.value === range)?.label}
-      </Button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent className="w-56">
-      <DropdownMenuLabel>Select Range</DropdownMenuLabel>
-      <DropdownMenuSeparator />
-      <DropdownMenuRadioGroup value={range} onValueChange={setRange}>
-        {ranges.map(r => (
-          <DropdownMenuRadioItem key={r.value} value={r.value}>
-            {r.label}
-          </DropdownMenuRadioItem>
-        ))}
-      </DropdownMenuRadioGroup>
-    </DropdownMenuContent>
-  </DropdownMenu>
-</div>
+        <div className="flex flex-col justify-center gap-1 px-6 py-4">
+          <label className="text-sm text-muted-foreground mb-1">Range:</label>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="text-sm capitalize">
+                {ranges.find(r => r.value === range)?.label}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56">
+              <DropdownMenuLabel>Select Range</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuRadioGroup value={range} onValueChange={setRange}>
+                {ranges.map(r => (
+                  <DropdownMenuRadioItem key={r.value} value={r.value}>
+                    {r.label}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </CardHeader>
 
       <CardContent className="px-2 sm:p-6">
@@ -182,15 +174,29 @@ export const ChartLineInteractive = ({
           config={chartConfig}
           className="aspect-auto h-[250px] w-full"
         >
-          <LineChart data={data} margin={{ left: 12, right: 12 }}>
+          <AreaChart data={data} margin={{ left: 12, right: 12 }}>
+            <defs>
+              <linearGradient id="fillTemperature" x1="0" y1="0" x2="0" y2="1">
+                <stop
+                  offset="5%"
+                  stopColor="var(--color-temperature)"
+                  stopOpacity={0.8}
+                />
+                <stop
+                  offset="95%"
+                  stopColor="var(--color-temperature)"
+                  stopOpacity={0.1}
+                />
+              </linearGradient>
+            </defs>
             <CartesianGrid vertical={false} />
-             <YAxis
-    tickLine={false}
-    axisLine={false}
-    tickMargin={8}
-    domain={["auto", "auto"]}
-    tickFormatter={(value) => `${value}°C`}
-  />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              domain={["auto", "auto"]}
+              tickFormatter={(value) => `${value}°C`}
+            />
             <XAxis
               dataKey="date"
               tickLine={false}
@@ -218,15 +224,15 @@ export const ChartLineInteractive = ({
                 />
               }
             />
-            <Line
+            <Area
               dataKey="temperature"
               type="monotone"
-              stroke={`var(--color-temperature)`}
+              fill="url(#fillTemperature)"
+              stroke="var(--color-temperature)"
               strokeWidth={2}
-              dot={false}
-              isAnimationActive={false}
+              isAnimationActive={true}
             />
-          </LineChart>
+          </AreaChart>
         </ChartContainer>
       </CardContent>
     </Card>

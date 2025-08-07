@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,7 +37,7 @@ interface VoltageDataPoint {
 const chartConfig = {
   voltage: {
     label: "Voltage",
-    color: "var(--chart-1)",
+    color: "#fcd34d",
   },
 } satisfies ChartConfig;
 
@@ -83,41 +83,31 @@ export const VoltageChart = ({
     fetchHistoricalData(range);
   }, [range, fetchHistoricalData]);
 
-  // Update with real-time data - FIXED VERSION
+  // Update with real-time data
   React.useEffect(() => {
     if (voltage !== null && timestamp !== null) {
       setData(prev => {
-        // Create new data point
         const newPoint = {
           date: new Date(timestamp * 1000).toISOString(),
           voltage,
           timestamp
         };
         
-        // Check if this timestamp already exists
         const existingIndex = prev.findIndex(d => d.timestamp === timestamp);
         
         if (existingIndex >= 0) {
-          // If exists, replace it
           const newData = [...prev];
           newData[existingIndex] = newPoint;
           return newData;
         } else {
-          // If new, add it and sort
           return [...prev, newPoint].sort(
             (a, b) => (a.timestamp || 0) - (b.timestamp || 0)
-          );
-        }
+      )}
       });
     }
   }, [voltage, timestamp]);
 
-  // Calculate current voltage for display
-  const currentVoltage = React.useMemo(() => {
-    if (!data.length) return null;
-    return data[data.length - 1].voltage;
-  }, [data]);
-
+ 
   return (
     <Card className="py-4 sm:py-0">
       <CardHeader className="flex z-10 flex-col items-stretch border-b !p-0 sm:flex-row">
@@ -129,15 +119,10 @@ export const VoltageChart = ({
                 {status}
               </span>
             </p>
-            {currentVoltage !== null && (
-              <p className="text-lg font-bold">
-                {currentVoltage.toFixed(2)} V
-              </p>
-            )}
+            
           </div>
         </div>
 
-        {/* Rest of the component remains the same */}
         <div className="flex flex-col justify-center gap-1 px-6 py-4">
           <label className="text-sm text-muted-foreground mb-1">Range:</label>
           <DropdownMenu>
@@ -166,7 +151,21 @@ export const VoltageChart = ({
           config={chartConfig}
           className="aspect-auto h-[250px] w-full"
         >
-          <LineChart data={data} margin={{ left: 12, right: 12 }}>
+          <AreaChart data={data} margin={{ left: 12, right: 12 }}>
+            <defs>
+              <linearGradient id="fillVoltage" x1="0" y1="0" x2="0" y2="1">
+                <stop
+                  offset="5%"
+                  stopColor="var(--color-voltage)"
+                  stopOpacity={0.8}
+                />
+                <stop
+                  offset="95%"
+                  stopColor="var(--color-voltage)"
+                  stopOpacity={0.1}
+                />
+              </linearGradient>
+            </defs>
             <CartesianGrid vertical={false} />
             <YAxis
               tickLine={false}
@@ -209,15 +208,15 @@ export const VoltageChart = ({
                 />
               }
             />
-            <Line
+            <Area
               dataKey="voltage"
               type="monotone"
-              stroke={`var(--color-voltage)`}
+              fill="url(#fillVoltage)"
+              stroke="var(--color-voltage)"
               strokeWidth={2}
-              dot={false}
-              isAnimationActive={false}
+              isAnimationActive={true}
             />
-          </LineChart>
+          </AreaChart>
         </ChartContainer>
       </CardContent>
     </Card>
