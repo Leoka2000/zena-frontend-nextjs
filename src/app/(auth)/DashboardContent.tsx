@@ -1,7 +1,8 @@
 import AccelerometerProvider from "@/components/accelerometer/AccelerometerProvider";
 import BluetoothConnectButton from "@/components/BluetoothConnectButton";
-import { DownerCardsSection } from "@/components/downer-card-section/DownerCardSection";
+import { BottomCardsSection } from "@/components/downer-card-section/BottomCardSection";
 import TemperatureProvider from "@/components/temperature/TemperatureProvider";
+import { TimeElapsed } from "../../components/time-elapsed/TimElapsed";
 import { UpperCardsSection } from "@/components/upper-card-section/UpperCardsSection";
 
 import VoltageProvider from "@/components/voltage/VoltageProvider";
@@ -10,13 +11,15 @@ import React from "react";
 
 const DashboardContent = () => (
   <>
-    <div className="px-4 py-2">
+    <div className="flex items-center gap-2 px-4 py-2">
 
-      <BluetoothConnectButton />
+      <BluetoothConnectButton  />
+      <TimeElapsed />
+
     </div>
     <div className="@container/main">
-      <UpperCardsSection />
-      <DownerCardsSection />
+     
+      <BottomCardsSection />
     </div>
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
       <div className="grid auto-rows-min gap-4 md:grid-cols-2">

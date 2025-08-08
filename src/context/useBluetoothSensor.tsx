@@ -26,6 +26,14 @@ export const BluetoothSensorProvider = ({ children }) => {
   const [temperatureData, setTemperatureData] = useState(null);
   const [accelerometerData, setAccelerometerData] = useState(null);
   const [voltageData, setVoltageData] = useState(null);
+  
+  const [lastUpdateTimestamp, setLastUpdateTimestamp] = useState(() => {
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("lastUpdateTimestamp");
+    return stored ? parseInt(stored, 10) : null;
+  }
+  return null;
+});
 
   const notifyCharRef = useRef(null);
   const writeCharRef = useRef(null);
@@ -47,7 +55,7 @@ export const BluetoothSensorProvider = ({ children }) => {
   }, []);
 
   const startWriteInterval = useCallback(() => {
-    writeIntervalRef.current = setInterval(sendWriteRequest, 5000);
+    writeIntervalRef.current = setInterval(sendWriteRequest, 60000);
   }, [sendWriteRequest]);
 
   const stopWriteInterval = useCallback(() => {
@@ -71,7 +79,9 @@ export const BluetoothSensorProvider = ({ children }) => {
       const batteryData = parseBatteryVoltageHex(hexString);
       console.log("🔋 Battery Level:", batteryData.voltage);
       const token = getToken();
-      const timestamp = Math.floor(Date.now() / 1000); // Current Unix timestamp
+      const timestamp = Math.floor(Date.now() / 1000);
+      setLastUpdateTimestamp(timestamp);
+      localStorage.setItem("lastUpdateTimestamp", timestamp.toString());
 
       // Save temperature if available
       if (parsedTemperature?.temperature) {
@@ -219,6 +229,10 @@ export const BluetoothSensorProvider = ({ children }) => {
         voltageData,
         connectBluetooth,
         disconnectBluetooth,
+        lastUpdateTimestamp,
+        SERVICE_UUID,
+        READ_NOTIFY_CHARACTERISTIC_UUID,
+        WRITE_CHARACTERISTIC_UUID,
       }}
     >
       {children}

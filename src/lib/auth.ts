@@ -1,3 +1,6 @@
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+
 export async function fetchCurrentUser() {
   const token = getToken()
 
@@ -40,4 +43,15 @@ export const isAuthenticated = () => {
 export const logout = () => {
   localStorage.removeItem("token")
   window.location.href = "/" // redirect to homepage
+}
+
+export function useAuthRedirect() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      router.replace("/");
+    }
+  }, [router]);
 }
