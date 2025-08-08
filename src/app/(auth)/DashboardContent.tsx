@@ -17,6 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import DeviceSelect from "@/components/DeviceSelect";
+import { LogoutButton } from "@/components/LogoutButton";
+import BluetoothConnectButton from "@/components/BluetoothConnectButton";
 
 interface DeviceForm {
   name: string;
@@ -68,8 +70,12 @@ const DashboardContent = () => {
 
   return (
     <div className="flex flex-col items-center gap-4 px-4 py-2">
+      
       {hasCreatedFirstDevice ? (
+        <div>
+          < BluetoothConnectButton/>
         <DeviceSelect devices={devices} />
+        </div>
       ) : (
         <div className="flex flex-col items-center gap-5 mt-10">
           <p className="text-2xl">No registered device yet.</p>

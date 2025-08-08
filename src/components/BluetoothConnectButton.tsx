@@ -1,16 +1,20 @@
-// components/BluetoothConnectButton.tsx
 import { Bluetooth, BluetoothOff } from "lucide-react";
 import { useBluetoothSensor } from "../context/useBluetoothSensor";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const BluetoothConnectButton = () => {
-  const { isConnected, connectBluetooth, disconnectBluetooth } =
+  const { isConnected, connectBluetooth, disconnectBluetooth, selectedDevice } =
     useBluetoothSensor();
 
-  // Track previous connection state to detect changes
+  // Track previous connection state to detect changes and show toast
   const prevConnected = useRef(isConnected);
+  // Track previous selected device to reset connection UI on device change
+  const prevSelectedDevice = useRef(selectedDevice);
+
+  // Local state to force UI update for connection status on selectedDevice change
+  const [localConnected, setLocalConnected] = useState(isConnected);
 
   useEffect(() => {
     if (prevConnected.current !== isConnected) {
@@ -24,17 +28,29 @@ const BluetoothConnectButton = () => {
         });
       }
       prevConnected.current = isConnected;
+      setLocalConnected(isConnected);
     }
   }, [isConnected]);
 
+  // When selectedDevice changes, reset localConnected to false
+  useEffect(() => {
+    if (prevSelectedDevice.current !== selectedDevice) {
+      // Disconnect is already triggered by context, but UI needs to reflect immediately
+      setLocalConnected(false);
+      prevSelectedDevice.current = selectedDevice;
+    }
+  }, [selectedDevice]);
+
   return (
     <div className="flex flex-col font-sm space-y-2">
-      {!isConnected ? (
+      {!localConnected ? (
         <Button
           onClick={connectBluetooth}
           className="max-w-3xs cursor-pointer"
+          disabled={!selectedDevice} // disable button if no device selected
+          title={!selectedDevice ? "Select a device first" : undefined}
         >
-          <Bluetooth className="mr-2  h-4 w-4" />
+          <Bluetooth className="mr-2 h-4 w-4" />
           Connect to Bluetooth Device
         </Button>
       ) : (

@@ -44,6 +44,13 @@ export const BluetoothSensorProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
+  if (device) {
+    disconnectBluetooth();
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [selectedDevice]);
+
+  useEffect(() => {
     console.log("🔄 selectedDevice changed:", selectedDevice);
   }, [selectedDevice]);
 

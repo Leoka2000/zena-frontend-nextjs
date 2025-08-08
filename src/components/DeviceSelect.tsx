@@ -67,6 +67,8 @@ const DeviceSelect: React.FC<Props> = ({ devices }) => {
 
   return (
     <>
+    <div>
+      
       <label className="font-semibold mb-1 block">Select Device:</label>
       <Select
         onValueChange={handleValueChange}
@@ -87,6 +89,7 @@ const DeviceSelect: React.FC<Props> = ({ devices }) => {
           </SelectGroup>
         </SelectContent>
       </Select>
+      </div>
     </>
   );
 };
