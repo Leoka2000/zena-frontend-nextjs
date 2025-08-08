@@ -15,10 +15,6 @@ import { getToken } from "@/lib/auth";
 
 const BluetoothSensorContext = createContext(null);
 
-const SERVICE_UUID = "11111111-1111-1111-1111-111111111111";
-const READ_NOTIFY_CHARACTERISTIC_UUID = "22222222-2222-2222-2222-222222222222";
-const WRITE_CHARACTERISTIC_UUID = "44444444-4444-4444-4444-444444444444";
-
 export const BluetoothSensorProvider = ({ children }) => {
   const [status, setStatus] = useState("Disconnected");
   const [device, setDevice] = useState(null);
@@ -27,33 +23,30 @@ export const BluetoothSensorProvider = ({ children }) => {
   const [accelerometerData, setAccelerometerData] = useState(null);
   const [voltageData, setVoltageData] = useState(null);
 
-  // Initialize selectedDevice to null (safe for SSR)
   const [selectedDevice, setSelectedDeviceState] = useState(null);
 
-useEffect(() => {
-  if (typeof window !== "undefined") {
-    const stored = localStorage.getItem("selectedDevice");
-    if (stored) {
-      try {
-        const parsedDevice = JSON.parse(stored);
-        setSelectedDeviceState(parsedDevice);
-        console.log("🌐 Page loaded - selectedDevice from localStorage:", parsedDevice);
-      } catch {
-        setSelectedDeviceState(null);
-        console.log("🌐 Page loaded - selectedDevice from localStorage: null (parse error)");
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("selectedDevice");
+      if (stored) {
+        try {
+          const parsedDevice = JSON.parse(stored);
+          setSelectedDeviceState(parsedDevice);
+          console.log("🌐 Page loaded - selectedDevice from localStorage:", parsedDevice);
+        } catch {
+          setSelectedDeviceState(null);
+          console.log("🌐 Page loaded - selectedDevice from localStorage: null (parse error)");
+        }
+      } else {
+        console.log("🌐 Page loaded - selectedDevice from localStorage: null (no stored device)");
       }
-    } else {
-      console.log("🌐 Page loaded - selectedDevice from localStorage: null (no stored device)");
     }
-  }
-}, []);
+  }, []);
 
-  // Log selectedDevice state whenever it changes
   useEffect(() => {
     console.log("🔄 selectedDevice changed:", selectedDevice);
   }, [selectedDevice]);
 
-  // Wrap setter to sync localStorage as well
   const setSelectedDevice = (device) => {
     setSelectedDeviceState(device);
     if (typeof window !== "undefined") {
@@ -182,23 +175,31 @@ useEffect(() => {
       return;
     }
 
+    if (!selectedDevice) {
+      setStatus("No device selected");
+      console.warn("Cannot connect: no selectedDevice set");
+      return;
+    }
+
     try {
       setStatus("Requesting Bluetooth device...");
-      const selectedDevice = await navigator.bluetooth.requestDevice({
-        filters: [{ services: [SERVICE_UUID] }],
-        optionalServices: [SERVICE_UUID],
+      // Use serviceUuid dynamically from selectedDevice
+      const deviceFound = await navigator.bluetooth.requestDevice({
+        filters: [{ services: [selectedDevice.serviceUuid] }],
+        optionalServices: [selectedDevice.serviceUuid],
       });
 
-      setDevice(selectedDevice);
+      setDevice(deviceFound);
       setStatus("Connecting to GATT server...");
-      const server = await selectedDevice.gatt.connect();
+      const server = await deviceFound.gatt.connect();
 
-      const service = await server.getPrimaryService(SERVICE_UUID);
+      // Use dynamic UUIDs for service and characteristics
+      const service = await server.getPrimaryService(selectedDevice.serviceUuid);
       const notifyChar = await service.getCharacteristic(
-        READ_NOTIFY_CHARACTERISTIC_UUID
+        selectedDevice.readNotifyCharacteristicUuid
       );
       const writeChar = await service.getCharacteristic(
-        WRITE_CHARACTERISTIC_UUID
+        selectedDevice.writeCharacteristicUuid
       );
 
       notifyCharRef.current = notifyChar;
@@ -219,7 +220,12 @@ useEffect(() => {
       console.error("Bluetooth connection error:", error);
       setStatus(`Connection failed: ${error.message}`);
     }
-  }, [handleCharacteristicValueChanged, sendWriteRequest, startWriteInterval]);
+  }, [
+    handleCharacteristicValueChanged,
+    sendWriteRequest,
+    startWriteInterval,
+    selectedDevice,
+  ]);
 
   const disconnectBluetooth = useCallback(async () => {
     setStatus("Disconnecting...");
@@ -266,9 +272,10 @@ useEffect(() => {
         connectBluetooth,
         disconnectBluetooth,
         lastUpdateTimestamp,
-        SERVICE_UUID,
-        READ_NOTIFY_CHARACTERISTIC_UUID,
-        WRITE_CHARACTERISTIC_UUID,
+        // Provide dynamic UUIDs for any consumer that needs them
+        serviceUuid: selectedDevice?.serviceUuid ?? null,
+        readNotifyCharacteristicUuid: selectedDevice?.readNotifyCharacteristicUuid ?? null,
+        writeCharacteristicUuid: selectedDevice?.writeCharacteristicUuid ?? null,
         selectedDevice,
         setSelectedDevice,
       }}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useEffect} from "react";
+import React, { useEffect } from "react";
 import { toast } from "sonner";
 import {
   Select,
@@ -42,8 +42,9 @@ const DeviceSelect: React.FC<Props> = ({ devices }) => {
   useEffect(() => {
     if (selectedDevice) {
       console.log("🌟 Selected device updated:", selectedDevice);
-    } else {
-      console.log("🌟 Selected device cleared");
+      console.log("🔑 Service UUID:", selectedDevice.serviceUuid);
+      console.log("🔑 Read Notify Characteristic UUID:", selectedDevice.readNotifyCharacteristicUuid);
+      console.log("🔑 Write Characteristic UUID:", selectedDevice.writeCharacteristicUuid);
     }
   }, [selectedDevice]);
 
@@ -54,13 +55,10 @@ const DeviceSelect: React.FC<Props> = ({ devices }) => {
     }
 
     try {
-      // TODO: optimize by using devices prop instead of fetching again
-      // but for now i keep it here
       const deviceList = await fetchDeviceList();
       const matchedDevice = deviceList.find((d: Device) => d.name === value);
       if (matchedDevice) {
         setSelectedDevice(matchedDevice);
-        console.info("Selected Device Object:", matchedDevice);
       }
     } catch (err: any) {
       toast.error(err.message);
