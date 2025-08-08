@@ -1,5 +1,5 @@
 import * as React from "react";
-import { type LucideIcon } from "lucide-react";
+import { CopyPlus, type LucideIcon } from "lucide-react";
 
 import {
   SidebarGroup,
@@ -8,12 +8,18 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./ThemeToggle";
 
 export function NavSecondary() {
   return (
-    <SidebarGroup >
+    <SidebarGroup>
       <SidebarGroupContent>
+        <SidebarMenu className=" mb-3">
+          <Button className="mx-1" size="sm">
+            <CopyPlus /> New device
+          </Button>
+        </SidebarMenu>
         <SidebarMenu>
           <ThemeToggle />
         </SidebarMenu>

@@ -125,10 +125,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuButton size="lg" asChild>
               <a href="#">
                 <div className="text-sidebar-primary-foreground flex rounded-lg">
-             <Image src="/zanelogo.png" alt="Logo" width={70} height={70} className="mx-auto" />
+                  <Image
+                    src="/zanelogo.png"
+                    alt="Logo"
+                    width={70}
+                    height={70}
+                    className="mx-auto"
+                  />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">Zane Systems Kft </span>
+                  <span className="truncate font-medium">
+                    Zane Systems Kft{" "}
+                  </span>
                   <span className="truncate text-xs">Demo dashboard</span>
                 </div>
               </a>
@@ -137,9 +145,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-
         <NavSecondary />
+        <NavMain items={data.navMain} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />
