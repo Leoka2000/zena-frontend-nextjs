@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, {useEffect} from "react";
 import { toast } from "sonner";
 import {
   Select,
@@ -28,7 +28,8 @@ interface Props {
 const DeviceSelect: React.FC<Props> = ({ devices }) => {
   const { selectedDevice, setSelectedDevice } = useBluetoothSensor();
 
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const fetchDeviceList = async () => {
     const res = await fetch("http://localhost:8080/api/device/list", {
@@ -37,6 +38,14 @@ const DeviceSelect: React.FC<Props> = ({ devices }) => {
     if (!res.ok) throw new Error("Error when fetching device");
     return res.json();
   };
+
+  useEffect(() => {
+    if (selectedDevice) {
+      console.log("🌟 Selected device updated:", selectedDevice);
+    } else {
+      console.log("🌟 Selected device cleared");
+    }
+  }, [selectedDevice]);
 
   const handleValueChange = async (value: string) => {
     if (!value) {

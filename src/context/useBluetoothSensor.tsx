@@ -26,7 +26,44 @@ export const BluetoothSensorProvider = ({ children }) => {
   const [temperatureData, setTemperatureData] = useState(null);
   const [accelerometerData, setAccelerometerData] = useState(null);
   const [voltageData, setVoltageData] = useState(null);
-  const [selectedDevice, setSelectedDevice] = useState(null);
+
+  // Initialize selectedDevice to null (safe for SSR)
+  const [selectedDevice, setSelectedDeviceState] = useState(null);
+
+useEffect(() => {
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("selectedDevice");
+    if (stored) {
+      try {
+        const parsedDevice = JSON.parse(stored);
+        setSelectedDeviceState(parsedDevice);
+        console.log("🌐 Page loaded - selectedDevice from localStorage:", parsedDevice);
+      } catch {
+        setSelectedDeviceState(null);
+        console.log("🌐 Page loaded - selectedDevice from localStorage: null (parse error)");
+      }
+    } else {
+      console.log("🌐 Page loaded - selectedDevice from localStorage: null (no stored device)");
+    }
+  }
+}, []);
+
+  // Log selectedDevice state whenever it changes
+  useEffect(() => {
+    console.log("🔄 selectedDevice changed:", selectedDevice);
+  }, [selectedDevice]);
+
+  // Wrap setter to sync localStorage as well
+  const setSelectedDevice = (device) => {
+    setSelectedDeviceState(device);
+    if (typeof window !== "undefined") {
+      if (device) {
+        localStorage.setItem("selectedDevice", JSON.stringify(device));
+      } else {
+        localStorage.removeItem("selectedDevice");
+      }
+    }
+  };
 
   const [lastUpdateTimestamp, setLastUpdateTimestamp] = useState(() => {
     if (typeof window !== "undefined") {
@@ -78,13 +115,12 @@ export const BluetoothSensorProvider = ({ children }) => {
       const parsedTemperature = parseTemperatureHex(hexString);
       const parsedAccelerometer = parseAccelerometerHexData(hexString);
       const batteryData = parseBatteryVoltageHex(hexString);
-      console.log("🔋 Battery Level:", batteryData.voltage);
+      console.log("🔋 Battery Level:", batteryData?.voltage);
       const token = getToken();
       const timestamp = Math.floor(Date.now() / 1000);
       setLastUpdateTimestamp(timestamp);
       localStorage.setItem("lastUpdateTimestamp", timestamp.toString());
 
-      // Save temperature if available
       if (parsedTemperature?.temperature) {
         setTemperatureData(parsedTemperature);
         await fetch("http://localhost:8080/api/temperature", {
@@ -100,7 +136,6 @@ export const BluetoothSensorProvider = ({ children }) => {
         });
       }
 
-      // Save accelerometer if available
       if (parsedAccelerometer?.x !== undefined) {
         setAccelerometerData(parsedAccelerometer);
         await fetch("http://localhost:8080/api/accelerometer", {
@@ -119,8 +154,8 @@ export const BluetoothSensorProvider = ({ children }) => {
       }
 
       if (batteryData !== undefined && batteryData !== null) {
-        const timestamp = Math.floor(Date.now() / 1000); // already defined earlier
-        setVoltageData({ voltage: batteryData, timestamp }); // ✅ Include timestamp here
+        const timestamp = Math.floor(Date.now() / 1000);
+        setVoltageData({ voltage: batteryData, timestamp });
         await fetch("http://localhost:8080/api/voltage", {
           method: "POST",
           headers: {
