@@ -1,7 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useBluetoothSensor } from "../context/useBluetoothSensor"; // Adjust import path accordingly
 
 interface Device {
   id: number;
@@ -16,7 +26,8 @@ interface Props {
 }
 
 const DeviceSelect: React.FC<Props> = ({ devices }) => {
-  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const { selectedDevice, setSelectedDevice } = useBluetoothSensor();
+
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const fetchDeviceList = async () => {
@@ -27,19 +38,20 @@ const DeviceSelect: React.FC<Props> = ({ devices }) => {
     return res.json();
   };
 
-  const handleSelectChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedName = e.target.value;
-    if (!selectedName) {
+  const handleValueChange = async (value: string) => {
+    if (!value) {
       setSelectedDevice(null);
       return;
     }
 
     try {
+      // TODO: optimize by using devices prop instead of fetching again
+      // but for now i keep it here
       const deviceList = await fetchDeviceList();
-      const matchedDevice = deviceList.find((d: Device) => d.name === selectedName);
+      const matchedDevice = deviceList.find((d: Device) => d.name === value);
       if (matchedDevice) {
         setSelectedDevice(matchedDevice);
-        console.log("Selected Device Object:", matchedDevice);
+        console.info("Selected Device Object:", matchedDevice);
       }
     } catch (err: any) {
       toast.error(err.message);
@@ -48,19 +60,26 @@ const DeviceSelect: React.FC<Props> = ({ devices }) => {
 
   return (
     <>
-      <label className="font-semibold">Select Device:</label>
-      <select
-        className="border rounded px-2 py-1"
-        onChange={handleSelectChange}
+      <label className="font-semibold mb-1 block">Select Device:</label>
+      <Select
+        onValueChange={handleValueChange}
+        value={selectedDevice?.name ?? ""}
         defaultValue=""
       >
-        <option value="">-- Select Device --</option>
-        {devices.map(d => (
-          <option key={d.id} value={d.name}>
-            {d.name}
-          </option>
-        ))}
-      </select>
+        <SelectTrigger className="w-[240px]">
+          <SelectValue placeholder="Select a device" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            <SelectLabel>Devices</SelectLabel>
+            {devices.map((d) => (
+              <SelectItem key={d.id} value={d.name}>
+                {d.name}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
     </>
   );
 };

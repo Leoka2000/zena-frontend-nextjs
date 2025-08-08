@@ -26,14 +26,15 @@ export const BluetoothSensorProvider = ({ children }) => {
   const [temperatureData, setTemperatureData] = useState(null);
   const [accelerometerData, setAccelerometerData] = useState(null);
   const [voltageData, setVoltageData] = useState(null);
-  
+  const [selectedDevice, setSelectedDevice] = useState(null);
+
   const [lastUpdateTimestamp, setLastUpdateTimestamp] = useState(() => {
-  if (typeof window !== "undefined") {
-    const stored = localStorage.getItem("lastUpdateTimestamp");
-    return stored ? parseInt(stored, 10) : null;
-  }
-  return null;
-});
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("lastUpdateTimestamp");
+      return stored ? parseInt(stored, 10) : null;
+    }
+    return null;
+  });
 
   const notifyCharRef = useRef(null);
   const writeCharRef = useRef(null);
@@ -233,6 +234,8 @@ export const BluetoothSensorProvider = ({ children }) => {
         SERVICE_UUID,
         READ_NOTIFY_CHARACTERISTIC_UUID,
         WRITE_CHARACTERISTIC_UUID,
+        selectedDevice,
+        setSelectedDevice,
       }}
     >
       {children}
