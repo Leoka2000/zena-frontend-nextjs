@@ -30,7 +30,8 @@ interface DeviceForm {
   readNotifyCharacteristicUuid: string;
   writeCharacteristicUuid: string;
 }
-
+//12345678-1234-1234-1234-1234567890AB
+//ABCDEFAB-1234-5678-9ABC-DEF123456789
 export function NavSecondary() {
   const [form, setForm] = React.useState<DeviceForm>({
     name: "",
@@ -108,7 +109,7 @@ export function NavSecondary() {
                       onChange={(e) =>
                         setForm({ ...form, [field]: e.target.value })
                       }
-                      required
+                    
                     />
                   </div>
                 ))}

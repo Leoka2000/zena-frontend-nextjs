@@ -119,7 +119,7 @@ export function AccelerometerCard() {
       <CardHeader>
         <CardDescription>Accelerometer data</CardDescription>
         <CardTitle className="text-2xl font-semibold text-[#818cf8] tabular-nums @[250px]/card:text-3xl">
-          {accelerometerData ? "Live data" : previousData ? "Last known data" : "No data"}
+          {accelerometerData ? "Live data" : previousData ? "Last known data" : "No data yet"}
         </CardTitle>
         <div className="flex items-start gap-2 mt-5">
           <div className="flex flex-col items-center">

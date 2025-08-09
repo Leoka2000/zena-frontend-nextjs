@@ -19,6 +19,8 @@ import { toast } from "sonner";
 import DeviceSelect from "@/components/DeviceSelect";
 import { LogoutButton } from "@/components/LogoutButton";
 import BluetoothConnectButton from "@/components/BluetoothConnectButton";
+import { BottomCardsSection } from "@/components/downer-card-section/BottomCardSection";
+import { UpperCardsSection } from "@/components/upper-card-section/UpperCardsSection";
 
 interface DeviceForm {
   name: string;
@@ -28,7 +30,9 @@ interface DeviceForm {
 }
 
 const DashboardContent = () => {
-  const [hasCreatedFirstDevice, setHasCreatedFirstDevice] = useState<boolean | null>(null);
+  const [hasCreatedFirstDevice, setHasCreatedFirstDevice] = useState<
+    boolean | null
+  >(null);
   const [devices, setDevices] = useState<any[]>([]);
   const [form, setForm] = useState<DeviceForm>({
     name: "",
@@ -40,19 +44,22 @@ const DashboardContent = () => {
   useEffect(() => {
     const token = localStorage.getItem("token");
     const fetchData = async () => {
-      const status = await fetch("http://localhost:8080/users/me/device-status", {
-        headers: { Authorization: `Bearer ${token}` },
-      }).then(r => r.json());
+      const status = await fetch(
+        "http://localhost:8080/users/me/device-status",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      ).then((r) => r.json());
       setHasCreatedFirstDevice(status.hasCreatedFirstDevice);
 
       if (status.hasCreatedFirstDevice) {
         const list = await fetch("http://localhost:8080/api/device/list", {
           headers: { Authorization: `Bearer ${token}` },
-        }).then(r => r.json());
+        }).then((r) => r.json());
         setDevices(list);
       }
     };
-    fetchData().catch(err => toast.error(err.message));
+    fetchData().catch((err) => toast.error(err.message));
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,7 +67,10 @@ const DashboardContent = () => {
     const token = localStorage.getItem("token");
     const res = await fetch("http://localhost:8080/api/device/create", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify(form),
     });
     if (!res.ok) return toast.error("Failed to create device");
@@ -69,19 +79,24 @@ const DashboardContent = () => {
   };
 
   return (
-    <div className="flex flex-col items-center gap-4 px-4 py-2">
-      
+    <div className="gap-4 px-6 py-2">
       {hasCreatedFirstDevice ? (
         <div>
-          < BluetoothConnectButton/>
-        <DeviceSelect devices={devices} />
+          <BluetoothConnectButton />
+          <DeviceSelect devices={devices} />
+          <div className="@container/main">
+        
+            <BottomCardsSection />
+          </div>
         </div>
       ) : (
         <div className="flex flex-col items-center gap-5 mt-10">
           <p className="text-2xl">No registered device yet.</p>
           <Dialog>
             <DialogTrigger asChild>
-              <Button size="lg"><CopyPlus /> Create</Button>
+              <Button size="lg">
+                <CopyPlus /> Create
+              </Button>
             </DialogTrigger>
             <DialogContent>
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -89,14 +104,29 @@ const DashboardContent = () => {
                   <DialogTitle>Create New Device</DialogTitle>
                   <DialogDescription>Fill in device details.</DialogDescription>
                 </DialogHeader>
-                {["name","serviceUuid","readNotifyCharacteristicUuid","writeCharacteristicUuid"].map(f => (
+                {[
+                  "name",
+                  "serviceUuid",
+                  "readNotifyCharacteristicUuid",
+                  "writeCharacteristicUuid",
+                ].map((f) => (
                   <div key={f} className="grid gap-3">
                     <Label htmlFor={f}>{f}</Label>
-                    <Input id={f} name={f} value={(form as any)[f]} onChange={e => setForm({...form,[f]:e.target.value})} required />
+                    <Input
+                      id={f}
+                      name={f}
+                      value={(form as any)[f]}
+                      onChange={(e) =>
+                        setForm({ ...form, [f]: e.target.value })
+                      }
+                      required
+                    />
                   </div>
                 ))}
                 <DialogFooter>
-                  <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                  <DialogClose asChild>
+                    <Button variant="outline">Cancel</Button>
+                  </DialogClose>
                   <Button type="submit">Create</Button>
                 </DialogFooter>
               </form>

@@ -105,7 +105,7 @@ export function TemperatureCard() {
             ? `${temperatureData.temperature.toFixed(1)}°C`
             : previousTemperature !== null
             ? `${previousTemperature.toFixed(1)}°C`
-            : "--"}
+            : "No data yet"}
         </CardTitle>
         <CardAction>
           <Badge variant="outline" className="py-2">
