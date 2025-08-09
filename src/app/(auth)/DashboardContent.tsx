@@ -17,14 +17,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import DeviceSelect from "@/components/DeviceSelect";
-import { LogoutButton } from "@/components/LogoutButton";
+
 import BluetoothConnectButton from "@/components/BluetoothConnectButton";
 import { BottomCardsSection } from "@/components/downer-card-section/BottomCardSection";
-import { UpperCardsSection } from "@/components/upper-card-section/UpperCardsSection";
-import { CredentialsCard } from "@/components/dashboard-cards/CredentialsCard";
+
 import { useBluetoothSensor } from "@/context/useBluetoothSensor";
 import { motion } from "framer-motion";
+import VoltageProvider from "@/components/voltage/VoltageProvider";
+import TemperatureProvider from "@/components/temperature/TemperatureProvider";
+import AccelerometerProvider from "@/components/accelerometer/AccelerometerProvider";
 
+interface Device {
+  id: string;
+  name: string;
+  serviceUuid: string;
+  readNotifyCharacteristicUuid: string;
+  writeCharacteristicUuid: string;
+ 
+}
 interface DeviceForm {
   name: string;
   serviceUuid: string;
@@ -33,8 +43,10 @@ interface DeviceForm {
 }
 
 const DashboardContent = () => {
-  const [hasCreatedFirstDevice, setHasCreatedFirstDevice] = useState<boolean | null>(null);
-  const [devices, setDevices] = useState<any[]>([]);
+  const [hasCreatedFirstDevice, setHasCreatedFirstDevice] = useState<
+    boolean | null
+  >(null);
+  const [devices, setDevices] = useState<Device[]>([]);
   const [form, setForm] = useState<DeviceForm>({
     name: "",
     serviceUuid: "",
@@ -57,9 +69,12 @@ const DashboardContent = () => {
   useEffect(() => {
     const token = localStorage.getItem("token");
     const fetchData = async () => {
-      const status = await fetch("http://localhost:8080/users/me/device-status", {
-        headers: { Authorization: `Bearer ${token}` },
-      }).then((r) => r.json());
+      const status = await fetch(
+        "http://localhost:8080/users/me/device-status",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      ).then((r) => r.json());
       setHasCreatedFirstDevice(status.hasCreatedFirstDevice);
 
       if (status.hasCreatedFirstDevice) {
@@ -108,6 +123,17 @@ const DashboardContent = () => {
                 <BottomCardsSection />
               </div>
             </div>
+
+            <div className="mb-4 rounded-xl">
+              <VoltageProvider />
+            </div>
+            <div className="mb-4  rounded-xl">
+              <TemperatureProvider />
+            </div>
+
+            <div className="rounded-xl">
+              <AccelerometerProvider />
+            </div>
           </motion.div>
         </div>
       ) : (
@@ -136,8 +162,10 @@ const DashboardContent = () => {
                     <Input
                       id={f}
                       name={f}
-                      value={(form as any)[f]}
-                      onChange={(e) => setForm({ ...form, [f]: e.target.value })}
+                     value={form[f]} 
+                      onChange={(e) =>
+                        setForm({ ...form, [f]: e.target.value })
+                      }
                       required
                     />
                   </div>

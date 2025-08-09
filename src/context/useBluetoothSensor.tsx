@@ -13,8 +13,7 @@ import {
 } from "../lib/utils";
 import { getToken } from "@/lib/auth";
 
-const BluetoothSensorContext = createContext(null);
-
+const BluetoothSensorContext = createContext<any>(null);
 export const BluetoothSensorProvider = ({ children }) => {
   const [status, setStatus] = useState("Disconnected");
   const [device, setDevice] = useState(null);

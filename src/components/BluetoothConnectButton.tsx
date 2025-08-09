@@ -39,8 +39,7 @@ const BluetoothConnectButton = () => {
   const handleConnectBluetooth = async () => {
     try {
       await connectBluetooth();
-    } catch (error: any) {
-      // Check if error message matches invalid service name error
+    } catch (error: unknown) {
       if (
         error instanceof TypeError &&
         error.message.includes("Invalid Service name")
@@ -49,13 +48,11 @@ const BluetoothConnectButton = () => {
           "Credentials in incorrect form! Make sure to edit your credentials in order to connect successfully"
         );
       } else {
-        // For other errors, you may want to log or toast generically
         toast.error("Failed to connect to Bluetooth device.");
         console.error(error);
       }
     }
   };
-
   return (
     <div className="flex flex-col font-sm space-y-2 mb-5">
       {!localConnected ? (
