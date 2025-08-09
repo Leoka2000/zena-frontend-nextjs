@@ -32,23 +32,30 @@ export const BluetoothSensorProvider = ({ children }) => {
         try {
           const parsedDevice = JSON.parse(stored);
           setSelectedDeviceState(parsedDevice);
-          console.log("🌐 Page loaded - selectedDevice from localStorage:", parsedDevice);
+          console.log(
+            "🌐 Page loaded - selectedDevice from localStorage:",
+            parsedDevice
+          );
         } catch {
           setSelectedDeviceState(null);
-          console.log("🌐 Page loaded - selectedDevice from localStorage: null (parse error)");
+          console.log(
+            "🌐 Page loaded - selectedDevice from localStorage: null (parse error)"
+          );
         }
       } else {
-        console.log("🌐 Page loaded - selectedDevice from localStorage: null (no stored device)");
+        console.log(
+          "🌐 Page loaded - selectedDevice from localStorage: null (no stored device)"
+        );
       }
     }
   }, []);
 
   useEffect(() => {
-  if (device) {
-    disconnectBluetooth();
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [selectedDevice]);
+    if (device) {
+      disconnectBluetooth();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDevice]);
 
   useEffect(() => {
     console.log("🔄 selectedDevice changed:", selectedDevice);
@@ -201,7 +208,9 @@ export const BluetoothSensorProvider = ({ children }) => {
       const server = await deviceFound.gatt.connect();
 
       // Use dynamic UUIDs for service and characteristics
-      const service = await server.getPrimaryService(selectedDevice.serviceUuid);
+      const service = await server.getPrimaryService(
+        selectedDevice.serviceUuid
+      );
       const notifyChar = await service.getCharacteristic(
         selectedDevice.readNotifyCharacteristicUuid
       );
@@ -226,6 +235,7 @@ export const BluetoothSensorProvider = ({ children }) => {
     } catch (error) {
       console.error("Bluetooth connection error:", error);
       setStatus(`Connection failed: ${error.message}`);
+      throw error;
     }
   }, [
     handleCharacteristicValueChanged,
@@ -281,8 +291,10 @@ export const BluetoothSensorProvider = ({ children }) => {
         lastUpdateTimestamp,
         // Provide dynamic UUIDs for any consumer that needs them
         serviceUuid: selectedDevice?.serviceUuid ?? null,
-        readNotifyCharacteristicUuid: selectedDevice?.readNotifyCharacteristicUuid ?? null,
-        writeCharacteristicUuid: selectedDevice?.writeCharacteristicUuid ?? null,
+        readNotifyCharacteristicUuid:
+          selectedDevice?.readNotifyCharacteristicUuid ?? null,
+        writeCharacteristicUuid:
+          selectedDevice?.writeCharacteristicUuid ?? null,
         selectedDevice,
         setSelectedDevice,
       }}

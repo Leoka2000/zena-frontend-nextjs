@@ -8,12 +8,8 @@ const BluetoothConnectButton = () => {
   const { isConnected, connectBluetooth, disconnectBluetooth, selectedDevice } =
     useBluetoothSensor();
 
-  // Track previous connection state to detect changes and show toast
   const prevConnected = useRef(isConnected);
-  // Track previous selected device to reset connection UI on device change
   const prevSelectedDevice = useRef(selectedDevice);
-
-  // Local state to force UI update for connection status on selectedDevice change
   const [localConnected, setLocalConnected] = useState(isConnected);
 
   useEffect(() => {
@@ -32,22 +28,41 @@ const BluetoothConnectButton = () => {
     }
   }, [isConnected]);
 
-  // When selectedDevice changes, reset localConnected to false
   useEffect(() => {
     if (prevSelectedDevice.current !== selectedDevice) {
-      // Disconnect is already triggered by context, but UI needs to reflect immediately
       setLocalConnected(false);
       prevSelectedDevice.current = selectedDevice;
     }
   }, [selectedDevice]);
 
+  // New handler wrapping connectBluetooth with error handling
+  const handleConnectBluetooth = async () => {
+    try {
+      await connectBluetooth();
+    } catch (error: any) {
+      // Check if error message matches invalid service name error
+      if (
+        error instanceof TypeError &&
+        error.message.includes("Invalid Service name")
+      ) {
+        toast.error(
+          "Credentials in incorrect form! Make sure to edit your credentials in order to connect successfully"
+        );
+      } else {
+        // For other errors, you may want to log or toast generically
+        toast.error("Failed to connect to Bluetooth device.");
+        console.error(error);
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col font-sm space-y-2 mb-5">
       {!localConnected ? (
         <Button
-          onClick={connectBluetooth}
+          onClick={handleConnectBluetooth}
           className="max-w-3xs cursor-pointer"
-          disabled={!selectedDevice} // disable button if no device selected
+          disabled={!selectedDevice}
           title={!selectedDevice ? "Select a device first" : undefined}
         >
           <Bluetooth className="mr-2 h-4 w-4" />
