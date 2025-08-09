@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { CopyPlus } from "lucide-react";
 import {
@@ -22,6 +22,8 @@ import BluetoothConnectButton from "@/components/BluetoothConnectButton";
 import { BottomCardsSection } from "@/components/downer-card-section/BottomCardSection";
 import { UpperCardsSection } from "@/components/upper-card-section/UpperCardsSection";
 import { CredentialsCard } from "@/components/dashboard-cards/CredentialsCard";
+import { useBluetoothSensor } from "@/context/useBluetoothSensor";
+import { motion } from "framer-motion";
 
 interface DeviceForm {
   name: string;
@@ -31,9 +33,7 @@ interface DeviceForm {
 }
 
 const DashboardContent = () => {
-  const [hasCreatedFirstDevice, setHasCreatedFirstDevice] = useState<
-    boolean | null
-  >(null);
+  const [hasCreatedFirstDevice, setHasCreatedFirstDevice] = useState<boolean | null>(null);
   const [devices, setDevices] = useState<any[]>([]);
   const [form, setForm] = useState<DeviceForm>({
     name: "",
@@ -42,15 +42,24 @@ const DashboardContent = () => {
     writeCharacteristicUuid: "",
   });
 
+  const { selectedDevice } = useBluetoothSensor();
+  const prevDeviceId = useRef<string | null>(null);
+  const [animateKey, setAnimateKey] = useState(0);
+
+  // Trigger animation key change whenever selectedDevice.id changes
+  useEffect(() => {
+    if (selectedDevice?.id && selectedDevice.id !== prevDeviceId.current) {
+      setAnimateKey((prev) => prev + 1);
+      prevDeviceId.current = selectedDevice.id;
+    }
+  }, [selectedDevice]);
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     const fetchData = async () => {
-      const status = await fetch(
-        "http://localhost:8080/users/me/device-status",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      ).then((r) => r.json());
+      const status = await fetch("http://localhost:8080/users/me/device-status", {
+        headers: { Authorization: `Bearer ${token}` },
+      }).then((r) => r.json());
       setHasCreatedFirstDevice(status.hasCreatedFirstDevice);
 
       if (status.hasCreatedFirstDevice) {
@@ -85,13 +94,21 @@ const DashboardContent = () => {
         <div>
           <BluetoothConnectButton />
           <DeviceSelect devices={devices} />
-          <div className="@container/main">
+
+          {/* Animated Section */}
+          <motion.div
+            key={animateKey} // Forces re-animation on device change
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="@container/main"
+          >
             <div className="flex flex-col gap-2 py-2 pb-4 md:gap-6">
               <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-3">
                 <BottomCardsSection />
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       ) : (
         <div className="flex flex-col items-center gap-5 mt-10">
@@ -120,9 +137,7 @@ const DashboardContent = () => {
                       id={f}
                       name={f}
                       value={(form as any)[f]}
-                      onChange={(e) =>
-                        setForm({ ...form, [f]: e.target.value })
-                      }
+                      onChange={(e) => setForm({ ...form, [f]: e.target.value })}
                       required
                     />
                   </div>

@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { WalletCards } from "lucide-react";
+import { MonitorCog, WalletCards } from "lucide-react";
 import { useBluetoothSensor } from "../../context/useBluetoothSensor";
 import {
   Dialog,
@@ -123,9 +123,10 @@ export function CredentialsCard() {
               Credentials:
             </CardTitle>
             <CardAction>
-              <Badge variant="outline" className="py-2 shadow-md">
-                <WalletCards />
-              </Badge>
+              <span className="flex bg-neutral-100 shadow-md text-gray-500 text-xs font-medium me-2 px-2 py-1 rounded-lg dark:bg-neutral-800 dark:text-neutral-400 border dark:border-neutral-700">
+            
+           <MonitorCog size={25} strokeWidth={0.75} />
+              </span>
             </CardAction>
           </CardHeader>
           <CardFooter className="flex-col items-start gap-1.5 text-sm">

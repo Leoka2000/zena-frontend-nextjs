@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Heater } from "lucide-react";
+import { Heater, ThermometerSun } from "lucide-react";
 import { useBluetoothSensor } from "../../context/useBluetoothSensor";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -108,9 +108,10 @@ export function TemperatureCard() {
             : "No data yet"}
         </CardTitle>
         <CardAction>
-          <Badge variant="outline" className="py-2">
-            <Heater className="size-4" />
-          </Badge>
+             <span className="flex bg-neutral-100 shadow-md text-gray-500 text-xs font-medium me-2 px-2 py-1 rounded-lg dark:bg-neutral-800 dark:text-neutral-400 border dark:border-neutral-700">
+            <ThermometerSun size={25} strokeWidth={0.75} />
+      
+              </span>
         </CardAction>
       </CardHeader>
       <CardFooter className="flex-col items-start gap-1.5 text-xs">
