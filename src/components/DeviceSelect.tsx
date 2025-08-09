@@ -31,7 +31,7 @@ const DeviceSelect: React.FC<Props> = ({ devices }) => {
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-  const fetchDeviceList = async () => {
+  const fetchDeviceList = async (): Promise<Device[]> => {
     const res = await fetch("http://localhost:8080/api/device/list", {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -43,8 +43,14 @@ const DeviceSelect: React.FC<Props> = ({ devices }) => {
     if (selectedDevice) {
       console.log("🌟 Selected device updated:", selectedDevice);
       console.log("🔑 Service UUID:", selectedDevice.serviceUuid);
-      console.log("🔑 Read Notify Characteristic UUID:", selectedDevice.readNotifyCharacteristicUuid);
-      console.log("🔑 Write Characteristic UUID:", selectedDevice.writeCharacteristicUuid);
+      console.log(
+        "🔑 Read Notify Characteristic UUID:",
+        selectedDevice.readNotifyCharacteristicUuid
+      );
+      console.log(
+        "🔑 Write Characteristic UUID:",
+        selectedDevice.writeCharacteristicUuid
+      );
     }
   }, [selectedDevice]);
 
@@ -56,19 +62,21 @@ const DeviceSelect: React.FC<Props> = ({ devices }) => {
 
     try {
       const deviceList = await fetchDeviceList();
-      const matchedDevice = deviceList.find((d: Device) => d.name === value);
+      const matchedDevice = deviceList.find((d) => d.name === value);
       if (matchedDevice) {
         setSelectedDevice(matchedDevice);
       }
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error("An unexpected error occurred");
+      }
     }
   };
 
   return (
-    <>
     <div className="mb-5">
-      
       <label className="font-semibold mb-1 block">Select Device:</label>
       <Select
         onValueChange={handleValueChange}
@@ -89,8 +97,7 @@ const DeviceSelect: React.FC<Props> = ({ devices }) => {
           </SelectGroup>
         </SelectContent>
       </Select>
-      </div>
-    </>
+    </div>
   );
 };
 

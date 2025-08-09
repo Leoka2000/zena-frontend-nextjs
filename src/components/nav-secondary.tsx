@@ -30,8 +30,9 @@ interface DeviceForm {
   readNotifyCharacteristicUuid: string;
   writeCharacteristicUuid: string;
 }
-//12345678-1234-1234-1234-1234567890AB
-//ABCDEFAB-1234-5678-9ABC-DEF123456789
+
+type DeviceFormField = keyof DeviceForm;
+
 export function NavSecondary() {
   const [form, setForm] = React.useState<DeviceForm>({
     name: "",
@@ -44,7 +45,8 @@ export function NavSecondary() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null;
     if (!token) {
       toast.error("No token found. Please login.");
       return;
@@ -61,7 +63,7 @@ export function NavSecondary() {
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        const message = errorData.message || "Failed to create device";
+        const message = (errorData as { message?: string }).message || "Failed to create device";
         toast.error(message);
         return;
       }
@@ -73,8 +75,12 @@ export function NavSecondary() {
         readNotifyCharacteristicUuid: "",
         writeCharacteristicUuid: "",
       });
-    } catch (err: any) {
-      toast.error(err.message || "Error creating device");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message || "Error creating device");
+      } else {
+        toast.error("Error creating device");
+      }
     }
   };
 
@@ -94,23 +100,24 @@ export function NavSecondary() {
                   <DialogTitle>Create New Device</DialogTitle>
                   <DialogDescription>Fill in device details.</DialogDescription>
                 </DialogHeader>
-                {[
-                  "name",
-                  "serviceUuid",
-                  "readNotifyCharacteristicUuid",
-                  "writeCharacteristicUuid",
-                ].map((field) => (
+                {(
+                  [
+                    "name",
+                    "serviceUuid",
+                    "readNotifyCharacteristicUuid",
+                    "writeCharacteristicUuid",
+                  ] as DeviceFormField[]
+                ).map((field) => (
                   <div key={field} className="grid gap-3">
                     <Label htmlFor={field}>{field}</Label>
                     <Input
                       id={field}
                       name={field}
                       required
-                      value={(form as any)[field]}
+                      value={form[field]}
                       onChange={(e) =>
                         setForm({ ...form, [field]: e.target.value })
                       }
-                    
                     />
                   </div>
                 ))}

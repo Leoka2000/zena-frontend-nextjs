@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useRef,
   useState,
+  ReactNode,
 } from "react";
 import {
   parseAccelerometerHexData,
@@ -13,23 +14,75 @@ import {
 } from "../lib/utils";
 import { getToken } from "@/lib/auth";
 
-const BluetoothSensorContext = createContext<any>(null);
-export const BluetoothSensorProvider = ({ children }) => {
-  const [status, setStatus] = useState("Disconnected");
-  const [device, setDevice] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
-  const [temperatureData, setTemperatureData] = useState(null);
-  const [accelerometerData, setAccelerometerData] = useState(null);
-  const [voltageData, setVoltageData] = useState(null);
+// Define types for device and data objects, adjust as needed
+interface Device {
+  id?: string;
+  name?: string;
+  serviceUuid: string;
+  readNotifyCharacteristicUuid: string;
+  writeCharacteristicUuid: string;
 
-  const [selectedDevice, setSelectedDeviceState] = useState(null);
+}
+
+interface TemperatureData {
+  temperature: number;
+  
+}
+
+interface AccelerometerData {
+  x: number;
+  y: number;
+  z: number;
+  
+}
+
+interface VoltageData {
+  voltage: number;
+  timestamp: number;
+}
+
+interface BluetoothSensorContextValue {
+  status: string;
+  isConnected: boolean;
+  temperatureData: TemperatureData | null;
+  accelerometerData: AccelerometerData | null;
+  voltageData: VoltageData | null;
+  connectBluetooth: () => Promise<void>;
+  disconnectBluetooth: () => Promise<void>;
+  lastUpdateTimestamp: number | null;
+  serviceUuid: string | null;
+  readNotifyCharacteristicUuid: string | null;
+  writeCharacteristicUuid: string | null;
+  selectedDevice: Device | null;
+  setSelectedDevice: (device: Device | null) => void;
+}
+
+// Provide default context value matching type or null for initial
+const BluetoothSensorContext = createContext<BluetoothSensorContextValue | null>(
+  null
+);
+
+interface BluetoothSensorProviderProps {
+  children: ReactNode;
+}
+
+export const BluetoothSensorProvider = ({ children }: BluetoothSensorProviderProps) => {
+  const [status, setStatus] = useState<string>("Disconnected");
+  const [device, setDevice] = useState<BluetoothDevice | null>(null);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [temperatureData, setTemperatureData] = useState<TemperatureData | null>(null);
+  const [accelerometerData, setAccelerometerData] = useState<AccelerometerData | null>(
+    null
+  );
+  const [voltageData, setVoltageData] = useState<VoltageData | null>(null);
+  const [selectedDevice, setSelectedDeviceState] = useState<Device | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("selectedDevice");
       if (stored) {
         try {
-          const parsedDevice = JSON.parse(stored);
+          const parsedDevice = JSON.parse(stored) as Device;
           setSelectedDeviceState(parsedDevice);
           console.log(
             "🌐 Page loaded - selectedDevice from localStorage:",
@@ -60,7 +113,7 @@ export const BluetoothSensorProvider = ({ children }) => {
     console.log("🔄 selectedDevice changed:", selectedDevice);
   }, [selectedDevice]);
 
-  const setSelectedDevice = (device) => {
+  const setSelectedDevice = (device: Device | null) => {
     setSelectedDeviceState(device);
     if (typeof window !== "undefined") {
       if (device) {
@@ -71,7 +124,7 @@ export const BluetoothSensorProvider = ({ children }) => {
     }
   };
 
-  const [lastUpdateTimestamp, setLastUpdateTimestamp] = useState(() => {
+  const [lastUpdateTimestamp, setLastUpdateTimestamp] = useState<number | null>(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("lastUpdateTimestamp");
       return stored ? parseInt(stored, 10) : null;
@@ -79,9 +132,9 @@ export const BluetoothSensorProvider = ({ children }) => {
     return null;
   });
 
-  const notifyCharRef = useRef(null);
-  const writeCharRef = useRef(null);
-  const writeIntervalRef = useRef(null);
+  const notifyCharRef = useRef<BluetoothRemoteGATTCharacteristic | null>(null);
+  const writeCharRef = useRef<BluetoothRemoteGATTCharacteristic | null>(null);
+  const writeIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const sendWriteRequest = useCallback(async () => {
     if (!writeCharRef.current) return;
@@ -109,78 +162,83 @@ export const BluetoothSensorProvider = ({ children }) => {
     }
   }, []);
 
-  const handleCharacteristicValueChanged = useCallback(async (event) => {
-    const value = event.target.value;
+  const handleCharacteristicValueChanged = useCallback(
+    async (event: Event) => {
+      const target = event.target as BluetoothRemoteGATTCharacteristic;
+      const value = target.value;
+      if (!value) return;
 
-    let hexString = "0x";
-    for (let i = 0; i < value.byteLength; i++) {
-      hexString += ("00" + value.getUint8(i).toString(16)).slice(-2);
-    }
-    console.log("📦 Received HEX data from Bluetooth device:", hexString);
-    try {
-      const parsedTemperature = parseTemperatureHex(hexString);
-      const parsedAccelerometer = parseAccelerometerHexData(hexString);
-      const batteryData = parseBatteryVoltageHex(hexString);
-      console.log("🔋 Battery Level:", batteryData?.voltage);
-      const token = getToken();
-      const timestamp = Math.floor(Date.now() / 1000);
-      setLastUpdateTimestamp(timestamp);
-      localStorage.setItem("lastUpdateTimestamp", timestamp.toString());
-
-      if (parsedTemperature?.temperature) {
-        setTemperatureData(parsedTemperature);
-        await fetch("http://localhost:8080/api/temperature", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            temperature: parsedTemperature.temperature,
-            timestamp: timestamp,
-          }),
-        });
+      let hexString = "0x";
+      for (let i = 0; i < value.byteLength; i++) {
+        hexString += ("00" + value.getUint8(i).toString(16)).slice(-2);
       }
-
-      if (parsedAccelerometer?.x !== undefined) {
-        setAccelerometerData(parsedAccelerometer);
-        await fetch("http://localhost:8080/api/accelerometer", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            x: parsedAccelerometer.x,
-            y: parsedAccelerometer.y,
-            z: parsedAccelerometer.z,
-            timestamp: timestamp,
-          }),
-        });
-      }
-
-      if (batteryData !== undefined && batteryData !== null) {
+      console.log("📦 Received HEX data from Bluetooth device:", hexString);
+      try {
+        const parsedTemperature = parseTemperatureHex(hexString);
+        const parsedAccelerometer = parseAccelerometerHexData(hexString);
+        const batteryData = parseBatteryVoltageHex(hexString);
+        console.log("🔋 Battery Level:", batteryData?.voltage);
+        const token = getToken();
         const timestamp = Math.floor(Date.now() / 1000);
-        setVoltageData({ voltage: batteryData, timestamp });
-        await fetch("http://localhost:8080/api/voltage", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            voltage: batteryData,
-            timestamp,
-          }),
-        });
-      }
+        setLastUpdateTimestamp(timestamp);
+        localStorage.setItem("lastUpdateTimestamp", timestamp.toString());
 
-      setStatus("Receiving data...");
-    } catch (error) {
-      console.error("Error processing device data:", error);
-      setStatus("Failed to process data");
-    }
-  }, []);
+        if (parsedTemperature?.temperature) {
+          setTemperatureData(parsedTemperature);
+          await fetch("http://localhost:8080/api/temperature", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              temperature: parsedTemperature.temperature,
+              timestamp: timestamp,
+            }),
+          });
+        }
+
+        if (parsedAccelerometer?.x !== undefined) {
+          setAccelerometerData(parsedAccelerometer);
+          await fetch("http://localhost:8080/api/accelerometer", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              x: parsedAccelerometer.x,
+              y: parsedAccelerometer.y,
+              z: parsedAccelerometer.z,
+              timestamp: timestamp,
+            }),
+          });
+        }
+
+        if (batteryData !== undefined && batteryData !== null) {
+          const timestamp = Math.floor(Date.now() / 1000);
+          setVoltageData({ voltage: batteryData, timestamp });
+          await fetch("http://localhost:8080/api/voltage", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              voltage: batteryData,
+              timestamp,
+            }),
+          });
+        }
+
+        setStatus("Receiving data...");
+      } catch (error) {
+        console.error("Error processing device data:", error);
+        setStatus("Failed to process data");
+      }
+    },
+    []
+  );
 
   const connectBluetooth = useCallback(async () => {
     if (!navigator.bluetooth) {
@@ -204,12 +262,10 @@ export const BluetoothSensorProvider = ({ children }) => {
 
       setDevice(deviceFound);
       setStatus("Connecting to GATT server...");
-      const server = await deviceFound.gatt.connect();
+      const server = await deviceFound.gatt!.connect();
 
       // Use dynamic UUIDs for service and characteristics
-      const service = await server.getPrimaryService(
-        selectedDevice.serviceUuid
-      );
+      const service = await server.getPrimaryService(selectedDevice.serviceUuid);
       const notifyChar = await service.getCharacteristic(
         selectedDevice.readNotifyCharacteristicUuid
       );
@@ -231,9 +287,13 @@ export const BluetoothSensorProvider = ({ children }) => {
 
       sendWriteRequest();
       startWriteInterval();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Bluetooth connection error:", error);
-      setStatus(`Connection failed: ${error.message}`);
+      if (error instanceof Error) {
+        setStatus(`Connection failed: ${error.message}`);
+      } else {
+        setStatus("Connection failed: unknown error");
+      }
       throw error;
     }
   }, [
@@ -288,7 +348,6 @@ export const BluetoothSensorProvider = ({ children }) => {
         connectBluetooth,
         disconnectBluetooth,
         lastUpdateTimestamp,
-        // Provide dynamic UUIDs for any consumer that needs them
         serviceUuid: selectedDevice?.serviceUuid ?? null,
         readNotifyCharacteristicUuid:
           selectedDevice?.readNotifyCharacteristicUuid ?? null,
@@ -303,4 +362,10 @@ export const BluetoothSensorProvider = ({ children }) => {
   );
 };
 
-export const useBluetoothSensor = () => useContext(BluetoothSensorContext);
+export const useBluetoothSensor = () => {
+  const context = useContext(BluetoothSensorContext);
+  if (!context) {
+    throw new Error("useBluetoothSensor must be used within a BluetoothSensorProvider");
+  }
+  return context;
+};

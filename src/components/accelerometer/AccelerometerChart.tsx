@@ -22,8 +22,15 @@ import {
 } from "@/components/ui/chart";
 import { getToken } from "@/lib/auth";
 
+interface AccelerometerDataPoint {
+  timestamp: number;
+  x: number;
+  y: number;
+  z: number;
+}
+
 interface AccelerometerChartProps {
-  liveData: any;
+  liveData: AccelerometerDataPoint | null;
   status: string;
 }
 
@@ -44,7 +51,7 @@ export const AccelerometerChart = ({
   liveData,
   status,
 }: AccelerometerChartProps) => {
-  const [data, setData] = React.useState([]);
+  const [data, setData] = React.useState<AccelerometerDataPoint[]>([]);
   const [range, setRange] = React.useState("day");
 
   const statusColorClass =
@@ -55,7 +62,7 @@ export const AccelerometerChart = ({
   const fetchHistory = React.useCallback(async () => {
     try {
       const token = getToken();
-      const res = await axios.get(
+      const res = await axios.get<AccelerometerDataPoint[]>(
         `http://localhost:8080/api/accelerometer/history?range=${range}`,
         {
           headers: {
@@ -64,7 +71,7 @@ export const AccelerometerChart = ({
         }
       );
       setData(res.data);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to fetch accelerometer data:", err);
     }
   }, [range]);
@@ -90,11 +97,7 @@ export const AccelerometerChart = ({
     const latest = data[data.length - 1];
     return {
       current: latest
-        ? {
-            x: latest.x,
-            y: latest.y,
-            z: latest.z,
-          }
+        ? { x: latest.x, y: latest.y, z: latest.z }
         : null,
     };
   }, [data]);
@@ -106,9 +109,7 @@ export const AccelerometerChart = ({
           <CardTitle>Accelerometer</CardTitle>
           <div className="flex items-center gap-2">
             <p className="leading-4 text-sm py-1">
-              {" "}
               <span className={`text-sm font-semibold ${statusColorClass}`}>
-                {" "}
                 {status}
               </span>
             </p>
