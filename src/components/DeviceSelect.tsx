@@ -67,7 +67,7 @@ const DeviceSelect: React.FC<Props> = ({ devices }) => {
 
   return (
     <>
-    <div>
+    <div className="mb-5">
       
       <label className="font-semibold mb-1 block">Select Device:</label>
       <Select

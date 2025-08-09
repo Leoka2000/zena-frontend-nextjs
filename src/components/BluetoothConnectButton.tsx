@@ -42,7 +42,7 @@ const BluetoothConnectButton = () => {
   }, [selectedDevice]);
 
   return (
-    <div className="flex flex-col font-sm space-y-2">
+    <div className="flex flex-col font-sm space-y-2 mb-5">
       {!localConnected ? (
         <Button
           onClick={connectBluetooth}

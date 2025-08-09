@@ -105,6 +105,7 @@ export function NavSecondary() {
                     <Input
                       id={field}
                       name={field}
+                      required
                       value={(form as any)[field]}
                       onChange={(e) =>
                         setForm({ ...form, [field]: e.target.value })
