@@ -78,7 +78,7 @@ const DashboardContent = () => {
       setHasCreatedFirstDevice(status.hasCreatedFirstDevice);
 
       if (status.hasCreatedFirstDevice) {
-        const list = await fetch("http://localhost:8080/api/device/list", {
+        const list = await fetch("http://185.80.51.121:8080/api/device/list", {
           headers: { Authorization: `Bearer ${token}` },
         }).then((r) => r.json());
         setDevices(list);
@@ -90,7 +90,7 @@ const DashboardContent = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
-    const res = await fetch("http://localhost:8080/api/device/create", {
+    const res = await fetch("http://185.80.51.121:8080/api/device/create", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
