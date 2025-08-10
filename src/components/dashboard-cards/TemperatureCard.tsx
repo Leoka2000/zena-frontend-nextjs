@@ -26,7 +26,7 @@ export function TemperatureCard() {
     const fetchLatestTemperature = async () => {
       try {
         const token = getToken();
-        const res = await fetch("http://localhost:8080/api/temperatures/history", {
+        const res = await fetch("http://185.80.51.121:8080/api/temperatures/history", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
