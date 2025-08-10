@@ -63,7 +63,7 @@ export const AccelerometerChart = ({
     try {
       const token = getToken();
       const res = await axios.get<AccelerometerDataPoint[]>(
-        `http://localhost:8080/api/accelerometer/history?range=${range}`,
+        `http://185.80.51.121:8080/api/accelerometer/history?range=${range}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
