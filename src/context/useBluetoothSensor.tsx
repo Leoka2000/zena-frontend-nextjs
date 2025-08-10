@@ -185,7 +185,7 @@ export const BluetoothSensorProvider = ({ children }: BluetoothSensorProviderPro
 
         if (parsedTemperature?.temperature) {
           setTemperatureData(parsedTemperature);
-          await fetch("http://localhost:8080/api/temperature", {
+          await fetch("http://185.80.51.121:8080/api/temperature", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -200,7 +200,7 @@ export const BluetoothSensorProvider = ({ children }: BluetoothSensorProviderPro
 
         if (parsedAccelerometer?.x !== undefined) {
           setAccelerometerData(parsedAccelerometer);
-          await fetch("http://localhost:8080/api/accelerometer", {
+          await fetch("http://185.80.51.121:8080/api/accelerometer", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -218,7 +218,7 @@ export const BluetoothSensorProvider = ({ children }: BluetoothSensorProviderPro
         if (batteryData !== undefined && batteryData !== null) {
           const timestamp = Math.floor(Date.now() / 1000);
           setVoltageData({ voltage: batteryData, timestamp });
-          await fetch("http://localhost:8080/api/voltage", {
+          await fetch("http://185.80.51.121:8080/api/voltage", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
