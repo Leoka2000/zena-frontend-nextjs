@@ -65,7 +65,7 @@ export const VoltageChart = ({
     try {
       const token = await getToken();
       const res = await axios.get(
-        `http://localhost:8080/api/voltage/history?range=${selectedRange}`,
+        `http://185.80.51.121:8080/api/voltage/history?range=${selectedRange}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
