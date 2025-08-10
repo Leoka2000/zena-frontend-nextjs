@@ -69,7 +69,7 @@ export const ChartLineInteractive = ({
   const fetchHistoricalData = React.useCallback(async (selectedRange: string) => {
     try {
       const token = await getToken();
-      const res = await axios.get(`http://localhost:8080/api/temperature/history?range=${selectedRange}`, {
+      const res = await axios.get(`http://185.80.51.121:8080/api/temperature/history?range=${selectedRange}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
