@@ -32,7 +32,7 @@ const DeviceSelect: React.FC<Props> = ({ devices }) => {
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
   const fetchDeviceList = async (): Promise<Device[]> => {
-    const res = await fetch("http://localhost:8080/api/device/list", {
+    const res = await fetch("http://185.80.51.121:8080/api/device/list", {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error("Error when fetching device");
