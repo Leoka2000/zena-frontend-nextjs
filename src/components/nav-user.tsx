@@ -50,7 +50,7 @@ export function NavUser() {
           throw new Error("No authentication token found");
         }
 
-        const response = await fetch("http://localhost:8080/users/me", {
+        const response = await fetch("http://185.80.51.121:8080/users/me", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
