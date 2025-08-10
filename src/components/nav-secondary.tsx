@@ -52,7 +52,7 @@ export function NavSecondary() {
       return;
     }
     try {
-      const res = await fetch("http://localhost:8080/api/device/create", {
+      const res = await fetch("http://185.80.51.121:8080/api/device/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
