@@ -51,7 +51,7 @@ export function VerifyEmailForm() {
     setError("")
 
     try {
-      const res = await fetch("http://localhost:8080/auth/verify", {
+      const res = await fetch("http://185.80.51.121:8080/auth/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, verificationCode }),
