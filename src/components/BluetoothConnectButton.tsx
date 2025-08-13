@@ -14,30 +14,35 @@ const STANDARD_SERVICES: Record<string, string> = {
   '5678': 'Custom Service 2'
 };
 
-// Common Characteristic Properties
-const CHARACTERISTIC_PROPERTIES: Record<string, string> = {
-  read: 'Read',
-  write: 'Write',
-  notify: 'Notify',
-  indicate: 'Indicate',
-  broadcast: 'Broadcast',
-  writeWithoutResponse: 'WriteWithoutResponse'
-};
-
 const BluetoothConnectButton = () => {
   const [availableDevices, setAvailableDevices] = useState<BluetoothDevice[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [localConnected, setLocalConnected] = useState(false);
   const [currentDevice, setCurrentDevice] = useState<BluetoothDevice | null>(null);
-  const [notifyCharacteristic, setNotifyCharacteristic] = useState<BluetoothRemoteGATTCharacteristic | null>(null);
-  const [writeCharacteristic, setWriteCharacteristic] = useState<BluetoothRemoteGATTCharacteristic | null>(null);
+  const [notifyCharacteristic, setNotifyCharacteristic] = useState<{
+    uuid: string;
+    serviceUuid: string;
+  } | null>(null);
+  const [writeCharacteristic, setWriteCharacteristic] = useState<{
+    uuid: string;
+    serviceUuid: string;
+  } | null>(null);
+  const [allServices, setAllServices] = useState<
+    Array<{
+      uuid: string;
+      name: string;
+      characteristics: Array<{
+        uuid: string;
+        properties: string[];
+      }>;
+    }>
+  >([]);
 
   // Add your known service UUIDs here
   const KNOWN_SERVICES = [
     "0000180a-0000-1000-8000-00805f9b34fb", // Device Information Service
     "11111111-1111-1111-1111-111111111111", // Example custom service
-    "22222222-2222-2222-2222-222222222222"  // Another custom service
   ];
 
   const discoverServicesAndCharacteristics = async (device: BluetoothDevice) => {
@@ -54,52 +59,51 @@ const BluetoothConnectButton = () => {
       const services = await server.getPrimaryServices();
       console.log(`Found ${services.length} primary services`);
 
+      const discoveredServices = [];
+
       for (const service of services) {
         // Get short UUID (last 4 digits)
         const shortUuid = service.uuid.split('-')[0].slice(-4);
         const serviceName = STANDARD_SERVICES[shortUuid] || 'Unknown Service';
-        
-        console.group(`%c${serviceName}`, 'color: #4CAF50; font-weight: bold');
-        console.log(`Full UUID: ${service.uuid}`);
-        
+
         // Get all characteristics
         const characteristics = await service.getCharacteristics();
-        console.log(`Found ${characteristics.length} characteristics:`);
+        const discoveredCharacteristics = [];
 
         for (const characteristic of characteristics) {
-          const charShortUuid = characteristic.uuid.split('-')[0].slice(-4);
-          const props = Object.entries(characteristic.properties)
+          const properties = Object.entries(characteristic.properties)
             .filter(([_, value]) => value)
-            .map(([key]) => CHARACTERISTIC_PROPERTIES[key] || key)
-            .join(', ');
+            .map(([key]) => key);
 
-          console.groupCollapsed(
-            `%cCharacteristic: ${charShortUuid}`,
-            'color: #2196F3'
-          );
-          console.log(`Full UUID: ${characteristic.uuid}`);
-          console.log(`Properties: ${props}`);
-          
-          // Identify and store important characteristics
+          discoveredCharacteristics.push({
+            uuid: characteristic.uuid,
+            properties,
+          });
+
+          // Store important characteristics
           if (characteristic.properties.notify) {
-            console.log('🔔 NOTIFY characteristic');
-            setNotifyCharacteristic(characteristic);
+            setNotifyCharacteristic({
+              uuid: characteristic.uuid,
+              serviceUuid: service.uuid,
+            });
           }
           
           if (characteristic.properties.write) {
-            console.log('✏️ WRITE characteristic');
-            setWriteCharacteristic(characteristic);
+            setWriteCharacteristic({
+              uuid: characteristic.uuid,
+              serviceUuid: service.uuid,
+            });
           }
-          
-          if (characteristic.properties.read) {
-            console.log('📖 READ characteristic');
-          }
-          
-          console.groupEnd();
         }
-        console.groupEnd();
+
+        discoveredServices.push({
+          uuid: service.uuid,
+          name: serviceName,
+          characteristics: discoveredCharacteristics,
+        });
       }
 
+      setAllServices(discoveredServices);
       toast.success("Service discovery complete");
     } catch (error) {
       console.error("Discovery error:", error);
@@ -115,6 +119,7 @@ const BluetoothConnectButton = () => {
       setAvailableDevices([]);
       setNotifyCharacteristic(null);
       setWriteCharacteristic(null);
+      setAllServices([]);
       toast.info("Scanning for BLE devices...");
 
       // Request Bluetooth access with service UUIDs
@@ -170,6 +175,7 @@ const BluetoothConnectButton = () => {
     setCurrentDevice(null);
     setNotifyCharacteristic(null);
     setWriteCharacteristic(null);
+    setAllServices([]);
     toast.info("Disconnected from device");
   };
 
@@ -211,21 +217,71 @@ const BluetoothConnectButton = () => {
             Disconnect
           </Button>
           
-          <div className="p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
-            <h3 className="text-sm font-medium mb-2">Discovered Characteristics:</h3>
-            {notifyCharacteristic && (
-              <div className="text-sm mb-2">
-                <span className="font-medium">🔔 Notify:</span> {notifyCharacteristic.uuid}
-              </div>
-            )}
-            {writeCharacteristic && (
-              <div className="text-sm">
-                <span className="font-medium">✏️ Write:</span> {writeCharacteristic.uuid}
-              </div>
-            )}
-            {!notifyCharacteristic && !writeCharacteristic && (
-              <div className="text-sm text-gray-500">No special characteristics found</div>
-            )}
+          <div className="p-4 border rounded-lg bg-gray-50 dark:bg-gray-800 space-y-4">
+            <div>
+              <h3 className="text-sm font-medium mb-2">Key Characteristics:</h3>
+              {notifyCharacteristic && (
+                <div className="text-sm mb-2 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">🔔 Notify:</span>
+                    <span className="text-xs font-mono bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">
+                      {notifyCharacteristic.uuid}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    Service: {notifyCharacteristic.serviceUuid}
+                  </div>
+                </div>
+              )}
+              {writeCharacteristic && (
+                <div className="text-sm space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">✏️ Write:</span>
+                    <span className="text-xs font-mono bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">
+                      {writeCharacteristic.uuid}
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    Service: {writeCharacteristic.serviceUuid}
+                  </div>
+                </div>
+              )}
+              {!notifyCharacteristic && !writeCharacteristic && (
+                <div className="text-sm text-gray-500">No key characteristics found</div>
+              )}
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium mb-2">All Services:</h3>
+              {allServices.length > 0 ? (
+                <div className="space-y-3">
+                  {allServices.map((service) => (
+                    <div key={service.uuid} className="text-sm">
+                      <div className="font-medium">{service.name}</div>
+                      <div className="text-xs font-mono bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded mb-1">
+                        {service.uuid}
+                      </div>
+                      <div className="ml-2 space-y-1">
+                        {service.characteristics.map((char) => (
+                          <div key={char.uuid} className="flex items-start gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-mono bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">
+                                {char.uuid}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Properties: {char.properties.join(', ')}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-gray-500">No services discovered</div>
+              )}
+            </div>
           </div>
         </div>
       )}
