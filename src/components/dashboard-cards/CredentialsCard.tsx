@@ -8,9 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { MonitorCog, WalletCards } from "lucide-react";
-import { useBluetoothSensor } from "../../context/useBluetoothSensor";
+import { MonitorCog } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -24,41 +22,50 @@ import { Label } from "@/components/ui/label";
 import { getToken } from "@/lib/auth";
 import { toast } from "sonner";
 
-export function CredentialsCard() {
-  const { selectedDevice, setSelectedDevice } = useBluetoothSensor();
+interface Device {
+  id: number;
+  name: string;
+  serviceUuid: string;
+  readNotifyCharacteristicUuid: string;
+  writeCharacteristicUuid: string;
+}
 
-  // Initialize form state from selectedDevice, or empty if none
+export function CredentialsCard() {
+  const [device, setDevice] = useState<Device | null>(null);
   const [form, setForm] = useState({
-    id: "",
     name: "",
     serviceUuid: "",
     readNotifyCharacteristicUuid: "",
     writeCharacteristicUuid: "",
   });
-
-  // When selectedDevice changes, update form values accordingly
-  useEffect(() => {
-    if (selectedDevice) {
-      setForm({
-        id: selectedDevice.id ?? "",
-        name: selectedDevice.name ?? "",
-        serviceUuid: selectedDevice.serviceUuid ?? "",
-        readNotifyCharacteristicUuid:
-          selectedDevice.readNotifyCharacteristicUuid ?? "",
-        writeCharacteristicUuid: selectedDevice.writeCharacteristicUuid ?? "",
-      });
-    } else {
-      setForm({
-        id: "",
-        name: "",
-        serviceUuid: "",
-        readNotifyCharacteristicUuid: "",
-        writeCharacteristicUuid: "",
-      });
-    }
-  }, [selectedDevice]);
-
   const [isOpen, setIsOpen] = useState(false);
+
+  // Fetch active device on mount
+  useEffect(() => {
+    const fetchActiveDevice = async () => {
+      try {
+        const token = getToken();
+        const res = await fetch("http://localhost:8080/api/device/active", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error("Failed to fetch active device");
+        const activeDevice: Device = await res.json();
+        setDevice(activeDevice);
+        setForm({
+          name: activeDevice.name,
+          serviceUuid: activeDevice.serviceUuid,
+          readNotifyCharacteristicUuid: activeDevice.readNotifyCharacteristicUuid,
+          writeCharacteristicUuid: activeDevice.writeCharacteristicUuid,
+        });
+      } catch (err) {
+        console.error(err);
+        toast.error(
+          err instanceof Error ? err.message : "Failed to fetch active device"
+        );
+      }
+    };
+    fetchActiveDevice();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -67,51 +74,45 @@ export function CredentialsCard() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!form.id) {
-      toast.error("No device selected to update.");
+    if (!device) {
+      toast.error("No active device available");
       return;
     }
 
     try {
       const token = getToken();
-      const response = await fetch(
-        `http://localhost:8080/api/device/list/${form.id}`,
+      const res = await fetch(
+        `http://localhost:8080/api/device/list/${device.id}`,
         {
           method: "PATCH",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            name: form.name,
-            serviceUuid: form.serviceUuid,
-            readNotifyCharacteristicUuid: form.readNotifyCharacteristicUuid,
-            writeCharacteristicUuid: form.writeCharacteristicUuid,
-          }),
+          body: JSON.stringify(form),
         }
       );
 
-      if (!response.ok) {
-        throw new Error(`Failed to update device: ${response.statusText}`);
-      }
-
-      const updatedDevice = await response.json();
-
-      // Update context with new device data
-      setSelectedDevice(updatedDevice);
-
+      if (!res.ok) throw new Error("Failed to update device");
+      const updatedDevice: Device = await res.json();
+      setDevice(updatedDevice);
+      setForm({
+        name: updatedDevice.name,
+        serviceUuid: updatedDevice.serviceUuid,
+        readNotifyCharacteristicUuid: updatedDevice.readNotifyCharacteristicUuid,
+        writeCharacteristicUuid: updatedDevice.writeCharacteristicUuid,
+      });
       toast.success("Device updated successfully");
       setIsOpen(false);
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to update device. See console for details."
+        err instanceof Error ? err.message : "Failed to update device"
       );
     }
   };
+
+  if (!device) return null; // Optionally show a loader
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -131,19 +132,16 @@ export function CredentialsCard() {
           <CardFooter className="flex-col items-start gap-1.5 text-sm">
             <div className="flex flex-col gap-1 font-mono">
               <div className="text-xs text-muted-foreground">
-                <strong className="text-xs">Name:</strong> {form.name}
+                <strong>Name:</strong> {device.name}
               </div>
               <div className="text-xs text-muted-foreground">
-                <strong className="text-xs">Service UUID:</strong>{" "}
-                {form.serviceUuid}
+                <strong>Service UUID:</strong> {device.serviceUuid}
               </div>
               <div className="text-xs text-muted-foreground">
-                <strong className="text-xs">Notify UUID:</strong>{" "}
-                {form.readNotifyCharacteristicUuid}
+                <strong>Notify UUID:</strong> {device.readNotifyCharacteristicUuid}
               </div>
               <div className="text-xs text-muted-foreground">
-                <strong className="text-xs">Write UUID:</strong>{" "}
-                {form.writeCharacteristicUuid}
+                <strong>Write UUID:</strong> {device.writeCharacteristicUuid}
               </div>
             </div>
           </CardFooter>
@@ -196,9 +194,7 @@ export function CredentialsCard() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="writeCharacteristicUuid">
-                Write Characteristic UUID
-              </Label>
+              <Label htmlFor="writeCharacteristicUuid">Write Characteristic UUID</Label>
               <Input
                 id="writeCharacteristicUuid"
                 name="writeCharacteristicUuid"
@@ -211,11 +207,7 @@ export function CredentialsCard() {
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsOpen(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
               Cancel
             </Button>
             <Button type="submit">Save Changes</Button>

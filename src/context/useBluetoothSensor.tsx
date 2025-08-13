@@ -52,18 +52,27 @@ interface BluetoothSensorContextValue {
   disconnectBluetooth: (deviceId: string) => Promise<void>;
 }
 
-const BluetoothSensorContext = createContext<BluetoothSensorContextValue | null>(null);
+const BluetoothSensorContext =
+  createContext<BluetoothSensorContextValue | null>(null);
 
 interface BluetoothSensorProviderProps {
   children: ReactNode;
 }
 
-export const BluetoothSensorProvider = ({ children }: BluetoothSensorProviderProps) => {
-  const [connectedDevices, setConnectedDevices] = useState<Record<string, ConnectedDeviceState>>({});
+export const BluetoothSensorProvider = ({
+  children,
+}: BluetoothSensorProviderProps) => {
+  const [connectedDevices, setConnectedDevices] = useState<
+    Record<string, ConnectedDeviceState>
+  >({});
 
   // Store characteristic refs per device
-  const notifyCharRefs = useRef<Record<string, BluetoothRemoteGATTCharacteristic>>({});
-  const writeCharRefs = useRef<Record<string, BluetoothRemoteGATTCharacteristic>>({});
+  const notifyCharRefs = useRef<
+    Record<string, BluetoothRemoteGATTCharacteristic>
+  >({});
+  const writeCharRefs = useRef<
+    Record<string, BluetoothRemoteGATTCharacteristic>
+  >({});
   const writeIntervals = useRef<Record<string, NodeJS.Timeout>>({});
 
   const sendWriteRequest = useCallback(async (deviceId: string) => {
@@ -82,11 +91,14 @@ export const BluetoothSensorProvider = ({ children }: BluetoothSensorProviderPro
     }
   }, []);
 
-  const startWriteInterval = useCallback((deviceId: string) => {
-    writeIntervals.current[deviceId] = setInterval(() => {
-      sendWriteRequest(deviceId);
-    }, 60000);
-  }, [sendWriteRequest]);
+  const startWriteInterval = useCallback(
+    (deviceId: string) => {
+      writeIntervals.current[deviceId] = setInterval(() => {
+        sendWriteRequest(deviceId);
+      }, 60000);
+    },
+    [sendWriteRequest]
+  );
 
   const stopWriteInterval = useCallback((deviceId: string) => {
     if (writeIntervals.current[deviceId]) {
@@ -115,13 +127,18 @@ export const BluetoothSensorProvider = ({ children }: BluetoothSensorProviderPro
         const token = getToken();
         const timestamp = Math.floor(Date.now() / 1000);
 
-        setConnectedDevices(prev => ({
+        setConnectedDevices((prev) => ({
           ...prev,
           [device.id!]: {
             ...prev[device.id!],
-            temperatureData: parsedTemperature || prev[device.id!]?.temperatureData,
-            accelerometerData: parsedAccelerometer || prev[device.id!]?.accelerometerData,
-            voltageData: batteryData !== undefined ? { voltage: batteryData, timestamp } : prev[device.id!]?.voltageData,
+            temperatureData:
+              parsedTemperature || prev[device.id!]?.temperatureData,
+            accelerometerData:
+              parsedAccelerometer || prev[device.id!]?.accelerometerData,
+            voltageData:
+              batteryData !== undefined
+                ? { voltage: batteryData, timestamp }
+                : prev[device.id!]?.voltageData,
             lastUpdateTimestamp: timestamp,
           },
         }));
@@ -129,11 +146,14 @@ export const BluetoothSensorProvider = ({ children }: BluetoothSensorProviderPro
         if (parsedTemperature?.temperature) {
           await fetch("http://localhost:8080/api/temperature", {
             method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
             body: JSON.stringify({
               deviceId: device.id,
               temperature: parsedTemperature.temperature,
-              timestamp
+              timestamp,
             }),
           });
         }
@@ -141,11 +161,14 @@ export const BluetoothSensorProvider = ({ children }: BluetoothSensorProviderPro
         if (parsedAccelerometer) {
           await fetch("http://localhost:8080/api/accelerometer", {
             method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
             body: JSON.stringify({
               deviceId: device.id,
               ...parsedAccelerometer,
-              timestamp
+              timestamp,
             }),
           });
         }
@@ -153,11 +176,14 @@ export const BluetoothSensorProvider = ({ children }: BluetoothSensorProviderPro
         if (batteryData !== undefined) {
           await fetch("http://localhost:8080/api/voltage", {
             method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
             body: JSON.stringify({
               deviceId: device.id,
               voltage: batteryData,
-              timestamp
+              timestamp,
             }),
           });
         }
@@ -185,24 +211,27 @@ export const BluetoothSensorProvider = ({ children }: BluetoothSensorProviderPro
         const server = await deviceFound.gatt!.connect();
         const service = await server.getPrimaryService(device.serviceUuid);
 
-        const notifyChar = await service.getCharacteristic(device.readNotifyCharacteristicUuid);
-        const writeChar = await service.getCharacteristic(device.writeCharacteristicUuid);
+        const notifyChar = await service.getCharacteristic(
+          device.readNotifyCharacteristicUuid
+        );
+        const writeChar = await service.getCharacteristic(
+          device.writeCharacteristicUuid
+        );
 
         notifyCharRefs.current[device.id!] = notifyChar;
         writeCharRefs.current[device.id!] = writeChar;
 
-        notifyChar.addEventListener(
-          "characteristicvaluechanged",
-          (event) => handleCharacteristicValueChanged(event, device)
+        notifyChar.addEventListener("characteristicvaluechanged", (event) =>
+          handleCharacteristicValueChanged(event, device)
         );
         await notifyChar.startNotifications();
 
-        setConnectedDevices(prev => ({
+        setConnectedDevices((prev) => ({
           ...prev,
           [device.id!]: {
             device,
             isConnected: true,
-            lastUpdateTimestamp: Date.now() / 1000
+            lastUpdateTimestamp: Date.now() / 1000,
           },
         }));
 
@@ -217,27 +246,30 @@ export const BluetoothSensorProvider = ({ children }: BluetoothSensorProviderPro
     [handleCharacteristicValueChanged, sendWriteRequest, startWriteInterval]
   );
 
-  const disconnectBluetooth = useCallback(async (deviceId: string) => {
-    console.log(`🔌 Disconnecting ${deviceId}`);
-    stopWriteInterval(deviceId);
+  const disconnectBluetooth = useCallback(
+    async (deviceId: string) => {
+      console.log(`🔌 Disconnecting ${deviceId}`);
+      stopWriteInterval(deviceId);
 
-    const notifyChar = notifyCharRefs.current[deviceId];
-    if (notifyChar) {
-      try {
-        await notifyChar.stopNotifications();
-      } catch (err) {
-        console.warn(`Stop notifications error for ${deviceId}:`, err);
+      const notifyChar = notifyCharRefs.current[deviceId];
+      if (notifyChar) {
+        try {
+          await notifyChar.stopNotifications();
+        } catch (err) {
+          console.warn(`Stop notifications error for ${deviceId}:`, err);
+        }
+        delete notifyCharRefs.current[deviceId];
       }
-      delete notifyCharRefs.current[deviceId];
-    }
 
-    // Note: We don't store BluetoothDevice refs here, so disconnection
-    // is managed by characteristic cleanup.
-    setConnectedDevices(prev => ({
-      ...prev,
-      [deviceId]: { ...prev[deviceId], isConnected: false }
-    }));
-  }, [stopWriteInterval]);
+      // Note: We don't store BluetoothDevice refs here, so disconnection
+      // is managed by characteristic cleanup.
+      setConnectedDevices((prev) => ({
+        ...prev,
+        [deviceId]: { ...prev[deviceId], isConnected: false },
+      }));
+    },
+    [stopWriteInterval]
+  );
 
   return (
     <BluetoothSensorContext.Provider
@@ -254,6 +286,9 @@ export const BluetoothSensorProvider = ({ children }: BluetoothSensorProviderPro
 
 export const useBluetoothSensor = () => {
   const context = useContext(BluetoothSensorContext);
-  if (!context) throw new Error("useBluetoothSensor must be used within BluetoothSensorProvider");
+  if (!context)
+    throw new Error(
+      "useBluetoothSensor must be used within BluetoothSensorProvider"
+    );
   return context;
 };
