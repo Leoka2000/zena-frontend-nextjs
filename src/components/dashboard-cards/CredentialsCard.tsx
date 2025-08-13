@@ -66,52 +66,52 @@ export function CredentialsCard() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!form.id) {
-    toast.error("No device selected to update.");
-    return;
-  }
-
-  try {
-    const token = getToken();
-    const response = await fetch(
-      `http://localhost:8080/api/device/list/${form.id}`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: form.name,
-          serviceUuid: form.serviceUuid,
-          readNotifyCharacteristicUuid: form.readNotifyCharacteristicUuid,
-          writeCharacteristicUuid: form.writeCharacteristicUuid,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Failed to update device: ${response.statusText}`);
+    if (!form.id) {
+      toast.error("No device selected to update.");
+      return;
     }
 
-    const updatedDevice = await response.json();
+    try {
+      const token = getToken();
+      const response = await fetch(
+        `http://localhost:8080/api/device/list/${form.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: form.name,
+            serviceUuid: form.serviceUuid,
+            readNotifyCharacteristicUuid: form.readNotifyCharacteristicUuid,
+            writeCharacteristicUuid: form.writeCharacteristicUuid,
+          }),
+        }
+      );
 
-    // Update context with new device data
-    setSelectedDevice(updatedDevice);
+      if (!response.ok) {
+        throw new Error(`Failed to update device: ${response.statusText}`);
+      }
 
-    toast.success("Device updated successfully");
-    setIsOpen(false);
-  } catch (error) {
-    console.error(error);
-    toast.error(
-      error instanceof Error
-        ? error.message
-        : "Failed to update device. See console for details."
-    );
-  }
-};
+      const updatedDevice = await response.json();
+
+      // Update context with new device data
+      setSelectedDevice(updatedDevice);
+
+      toast.success("Device updated successfully");
+      setIsOpen(false);
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to update device. See console for details."
+      );
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -123,15 +123,13 @@ export function CredentialsCard() {
               Credentials:
             </CardTitle>
             <CardAction>
-              <span className="flex bg-neutral-100 shadow-md text-gray-500 text-xs font-medium me-2 px-2 py-1 rounded-lg dark:bg-neutral-800 dark:text-neutral-400 border dark:border-neutral-700">
-            
-           <MonitorCog size={25} strokeWidth={0.75} />
+              <span className="flex bg-neutral-50 shadow-md text-gray-500 text-xs font-medium me-2 px-2 py-1 rounded-lg dark:bg-neutral-800 dark:text-neutral-400 border dark:border-neutral-700">
+                <MonitorCog size={25} strokeWidth={0.75} />
               </span>
             </CardAction>
           </CardHeader>
           <CardFooter className="flex-col items-start gap-1.5 text-sm">
             <div className="flex flex-col gap-1 font-mono">
-             
               <div className="text-xs text-muted-foreground">
                 <strong className="text-xs">Name:</strong> {form.name}
               </div>
@@ -168,7 +166,6 @@ export function CredentialsCard() {
                 onChange={handleChange}
                 placeholder="Enter device name"
                 disabled
-              
               />
             </div>
 

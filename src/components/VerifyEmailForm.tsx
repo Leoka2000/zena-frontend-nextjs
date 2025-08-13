@@ -1,16 +1,16 @@
-"use client"
+"use client";
 
-import { useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   Card,
   CardHeader,
@@ -18,81 +18,87 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from "@/components/ui/card"
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
-import { AlertCircleIcon, Loader2Icon } from "lucide-react"
-import router from "next/router"
-import Link from "next/link"
-import { toast } from "sonner"
+} from "@/components/ui/card";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { AlertCircleIcon, Loader2Icon } from "lucide-react";
+import router from "next/router";
+import Link from "next/link";
+import { toast } from "sonner";
 
 export function VerifyEmailForm() {
-  const searchParams = useSearchParams()
-  const email = searchParams.get("email") || ""
+  const searchParams = useSearchParams();
+  const email = searchParams.get("email") || "";
 
-  const [verificationCode, setVerificationCode] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [successDialogOpen, setSuccessDialogOpen] = useState(false)
+  const [verificationCode, setVerificationCode] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
 
-  const [resendLoading, setResendLoading] = useState(false)
-  const [resendCooldown, setResendCooldown] = useState(30)
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(30);
 
   // Countdown effect
   useEffect(() => {
     if (resendCooldown > 0) {
-      const timer = setTimeout(() => setResendCooldown((prev) => prev - 1), 1000)
-      return () => clearTimeout(timer)
+      const timer = setTimeout(
+        () => setResendCooldown((prev) => prev - 1),
+        1000
+      );
+      return () => clearTimeout(timer);
     }
-  }, [resendCooldown])
+  }, [resendCooldown]);
 
   const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
     try {
       const res = await fetch("http://localhost:8080/auth/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, verificationCode }),
-      })
+      });
 
-      const text = await res.text()
+      const text = await res.text();
 
       if (res.ok) {
-        setSuccessDialogOpen(true)
+        setSuccessDialogOpen(true);
       } else {
-        setError(text)
+        setError(text);
       }
     } catch {
-      setError("An unexpected error occurred.")
+      setError("An unexpected error occurred.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleResend = async () => {
-    setResendLoading(true)
-    setError("")
+    setResendLoading(true);
+    setError("");
 
     try {
-      const res = await fetch(`http://localhost:8080/auth/resend?email=${email}`, {
-        method: "POST",
-      })
-      const text = await res.text()
+      const res = await fetch(
+        `http://localhost:8080/auth/resend?email=${email}`,
+        {
+          method: "POST",
+        }
+      );
+      const text = await res.text();
 
       if (!res.ok) {
-        setError(text)
+        setError(text);
       } else {
-        setResendCooldown(30)
-        toast.success("Verification email sent!")
+        setResendCooldown(30);
+        toast.success("Verification email sent!");
       }
     } catch {
-      setError("Failed to resend code. Please try again.")
+      setError("Failed to resend code. Please try again.");
     } finally {
-      setResendLoading(false)
+      setResendLoading(false);
     }
-  }
+  };
 
   return (
     <>
@@ -100,7 +106,8 @@ export function VerifyEmailForm() {
         <CardHeader>
           <CardTitle>Email Verification</CardTitle>
           <CardDescription>
-            Paste the code sent to <span className="font-medium">{email}</span> below.
+            Paste the code sent to <span className="font-medium">{email}</span>{" "}
+            below.
           </CardDescription>
         </CardHeader>
 
@@ -108,9 +115,11 @@ export function VerifyEmailForm() {
           <form onSubmit={handleVerify} className="space-y-6">
             {error && (
               <Alert variant="destructive">
-                <AlertCircleIcon className="h-4 w-4" />
-                <AlertTitle>Error</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
+                <AlertCircleIcon className="h-4 w-4 dark:text-red-400 text-red-500" />
+                <AlertTitle className="dark:text-red-400">Error</AlertTitle>
+                <AlertDescription className="dark:text-red-400">
+                  {error}
+                </AlertDescription>
               </Alert>
             )}
 
@@ -126,7 +135,9 @@ export function VerifyEmailForm() {
 
             <CardFooter className="p-0 flex-col gap-2">
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
+                {loading && (
+                  <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 {loading ? "Verifying..." : "Verify"}
               </Button>
 
@@ -156,9 +167,9 @@ export function VerifyEmailForm() {
       <Dialog
         open={successDialogOpen}
         onOpenChange={(open) => {
-          setSuccessDialogOpen(open)
+          setSuccessDialogOpen(open);
           if (!open) {
-            router.push("/login")
+            router.push("/login");
           }
         }}
       >
@@ -175,5 +186,5 @@ export function VerifyEmailForm() {
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }

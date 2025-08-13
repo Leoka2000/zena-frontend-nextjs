@@ -22,8 +22,7 @@ export default function AuthLayout({
   }, []);
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem> 
       <BluetoothSensorProvider>
         <main className="">{children}</main>
       </BluetoothSensorProvider>

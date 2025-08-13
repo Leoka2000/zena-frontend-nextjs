@@ -38,7 +38,7 @@ export function AccelerometerCard() {
   useEffect(() => {
     const fetchLatestAccelerometer = async () => {
       try {
-        const res = await fetch("/api/accelerometer/history");
+        const res = await fetch("http://localhost:8080/api/accelerometer/history");
         if (!res.ok) throw new Error("Failed to fetch accelerometer history");
         const data: AccelerometerRecord[] = await res.json();
         if (data.length > 0) {

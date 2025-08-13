@@ -65,9 +65,9 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
           </CardDescription>
           {error && (
             <Alert >
-              <AlertCircleIcon className="h-4 w-4 dark:text-red-400 text-red-500" />
-              <AlertTitle className="dark:text-red-400">Error</AlertTitle>
-              <AlertDescription className="dark:text-red-400">{error}</AlertDescription>
+              <AlertCircleIcon className="h-4 w-4 dark:text-red-400 text-red-500" style={{color:"red"}}/>
+              <AlertTitle className="dark:text-red-400 text-red-500">Error</AlertTitle>
+              <AlertDescription className="dark:text-red-400 text-red-500">{error}</AlertDescription>
             </Alert>
           )}
         </CardHeader>

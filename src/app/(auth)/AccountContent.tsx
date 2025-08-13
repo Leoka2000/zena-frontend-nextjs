@@ -136,7 +136,7 @@ export function AccountContent() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+    <div className="flex flex-1 max-h-80 flex-col gap-4 p-4 pt-0">
       <Card className="w-full max-w-2xl">
         <CardHeader>
           <CardTitle>Account Details</CardTitle>

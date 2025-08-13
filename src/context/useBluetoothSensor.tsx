@@ -14,26 +14,22 @@ import {
 } from "../lib/utils";
 import { getToken } from "@/lib/auth";
 
-// Define types for device and data objects, adjust as needed
 interface Device {
   id?: string;
   name?: string;
   serviceUuid: string;
   readNotifyCharacteristicUuid: string;
   writeCharacteristicUuid: string;
-
 }
 
 interface TemperatureData {
   temperature: number;
-  
 }
 
 interface AccelerometerData {
   x: number;
   y: number;
   z: number;
-  
 }
 
 interface VoltageData {
@@ -41,103 +37,38 @@ interface VoltageData {
   timestamp: number;
 }
 
-interface BluetoothSensorContextValue {
-  status: string;
+interface ConnectedDeviceState {
+  device: Device;
   isConnected: boolean;
-  temperatureData: TemperatureData | null;
-  accelerometerData: AccelerometerData | null;
-  voltageData: VoltageData | null;
-  connectBluetooth: () => Promise<void>;
-  disconnectBluetooth: () => Promise<void>;
-  lastUpdateTimestamp: number | null;
-  serviceUuid: string | null;
-  readNotifyCharacteristicUuid: string | null;
-  writeCharacteristicUuid: string | null;
-  selectedDevice: Device | null;
-  setSelectedDevice: (device: Device | null) => void;
+  temperatureData?: TemperatureData;
+  accelerometerData?: AccelerometerData;
+  voltageData?: VoltageData;
+  lastUpdateTimestamp?: number;
 }
 
-// Provide default context value matching type or null for initial
-const BluetoothSensorContext = createContext<BluetoothSensorContextValue | null>(
-  null
-);
+interface BluetoothSensorContextValue {
+  connectedDevices: Record<string, ConnectedDeviceState>;
+  connectBluetooth: (device: Device) => Promise<void>;
+  disconnectBluetooth: (deviceId: string) => Promise<void>;
+}
+
+const BluetoothSensorContext = createContext<BluetoothSensorContextValue | null>(null);
 
 interface BluetoothSensorProviderProps {
   children: ReactNode;
 }
 
 export const BluetoothSensorProvider = ({ children }: BluetoothSensorProviderProps) => {
-  const [status, setStatus] = useState<string>("Disconnected");
-  const [device, setDevice] = useState<BluetoothDevice | null>(null);
-  const [isConnected, setIsConnected] = useState<boolean>(false);
-  const [temperatureData, setTemperatureData] = useState<TemperatureData | null>(null);
-  const [accelerometerData, setAccelerometerData] = useState<AccelerometerData | null>(
-    null
-  );
-  const [voltageData, setVoltageData] = useState<VoltageData | null>(null);
-  const [selectedDevice, setSelectedDeviceState] = useState<Device | null>(null);
+  const [connectedDevices, setConnectedDevices] = useState<Record<string, ConnectedDeviceState>>({});
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("selectedDevice");
-      if (stored) {
-        try {
-          const parsedDevice = JSON.parse(stored) as Device;
-          setSelectedDeviceState(parsedDevice);
-          console.log(
-            "🌐 Page loaded - selectedDevice from localStorage:",
-            parsedDevice
-          );
-        } catch {
-          setSelectedDeviceState(null);
-          console.log(
-            "🌐 Page loaded - selectedDevice from localStorage: null (parse error)"
-          );
-        }
-      } else {
-        console.log(
-          "🌐 Page loaded - selectedDevice from localStorage: null (no stored device)"
-        );
-      }
-    }
-  }, []);
+  // Store characteristic refs per device
+  const notifyCharRefs = useRef<Record<string, BluetoothRemoteGATTCharacteristic>>({});
+  const writeCharRefs = useRef<Record<string, BluetoothRemoteGATTCharacteristic>>({});
+  const writeIntervals = useRef<Record<string, NodeJS.Timeout>>({});
 
-  useEffect(() => {
-    if (device) {
-      disconnectBluetooth();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDevice]);
-
-  useEffect(() => {
-    console.log("🔄 selectedDevice changed:", selectedDevice);
-  }, [selectedDevice]);
-
-  const setSelectedDevice = (device: Device | null) => {
-    setSelectedDeviceState(device);
-    if (typeof window !== "undefined") {
-      if (device) {
-        localStorage.setItem("selectedDevice", JSON.stringify(device));
-      } else {
-        localStorage.removeItem("selectedDevice");
-      }
-    }
-  };
-
-  const [lastUpdateTimestamp, setLastUpdateTimestamp] = useState<number | null>(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("lastUpdateTimestamp");
-      return stored ? parseInt(stored, 10) : null;
-    }
-    return null;
-  });
-
-  const notifyCharRef = useRef<BluetoothRemoteGATTCharacteristic | null>(null);
-  const writeCharRef = useRef<BluetoothRemoteGATTCharacteristic | null>(null);
-  const writeIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  const sendWriteRequest = useCallback(async () => {
-    if (!writeCharRef.current) return;
+  const sendWriteRequest = useCallback(async (deviceId: string) => {
+    const writeChar = writeCharRefs.current[deviceId];
+    if (!writeChar) return;
 
     const unixTimestamp = Math.floor(Date.now() / 1000);
     const buffer = new ArrayBuffer(4);
@@ -145,25 +76,27 @@ export const BluetoothSensorProvider = ({ children }: BluetoothSensorProviderPro
     view.setUint32(0, unixTimestamp, false);
 
     try {
-      await writeCharRef.current.writeValue(buffer);
+      await writeChar.writeValue(buffer);
     } catch (error) {
-      console.error("Write error:", error);
+      console.error(`Write error for ${deviceId}:`, error);
     }
   }, []);
 
-  const startWriteInterval = useCallback(() => {
-    writeIntervalRef.current = setInterval(sendWriteRequest, 60000);
+  const startWriteInterval = useCallback((deviceId: string) => {
+    writeIntervals.current[deviceId] = setInterval(() => {
+      sendWriteRequest(deviceId);
+    }, 60000);
   }, [sendWriteRequest]);
 
-  const stopWriteInterval = useCallback(() => {
-    if (writeIntervalRef.current) {
-      clearInterval(writeIntervalRef.current);
-      writeIntervalRef.current = null;
+  const stopWriteInterval = useCallback((deviceId: string) => {
+    if (writeIntervals.current[deviceId]) {
+      clearInterval(writeIntervals.current[deviceId]);
+      delete writeIntervals.current[deviceId];
     }
   }, []);
 
   const handleCharacteristicValueChanged = useCallback(
-    async (event: Event) => {
+    async (event: Event, device: Device) => {
       const target = event.target as BluetoothRemoteGATTCharacteristic;
       const value = target.value;
       if (!value) return;
@@ -172,189 +105,146 @@ export const BluetoothSensorProvider = ({ children }: BluetoothSensorProviderPro
       for (let i = 0; i < value.byteLength; i++) {
         hexString += ("00" + value.getUint8(i).toString(16)).slice(-2);
       }
-      console.log("📦 Received HEX data from Bluetooth device:", hexString);
+      console.log(`📦 [${device.id}] Received HEX:`, hexString);
+
       try {
         const parsedTemperature = parseTemperatureHex(hexString);
         const parsedAccelerometer = parseAccelerometerHexData(hexString);
         const batteryData = parseBatteryVoltageHex(hexString);
-        console.log("🔋 Battery Level:", batteryData?.voltage);
+
         const token = getToken();
         const timestamp = Math.floor(Date.now() / 1000);
-        setLastUpdateTimestamp(timestamp);
-        localStorage.setItem("lastUpdateTimestamp", timestamp.toString());
+
+        setConnectedDevices(prev => ({
+          ...prev,
+          [device.id!]: {
+            ...prev[device.id!],
+            temperatureData: parsedTemperature || prev[device.id!]?.temperatureData,
+            accelerometerData: parsedAccelerometer || prev[device.id!]?.accelerometerData,
+            voltageData: batteryData !== undefined ? { voltage: batteryData, timestamp } : prev[device.id!]?.voltageData,
+            lastUpdateTimestamp: timestamp,
+          },
+        }));
 
         if (parsedTemperature?.temperature) {
-          setTemperatureData(parsedTemperature);
           await fetch("http://localhost:8080/api/temperature", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify({
+              deviceId: device.id,
               temperature: parsedTemperature.temperature,
-              timestamp: timestamp,
+              timestamp
             }),
           });
         }
 
-        if (parsedAccelerometer?.x !== undefined) {
-          setAccelerometerData(parsedAccelerometer);
+        if (parsedAccelerometer) {
           await fetch("http://localhost:8080/api/accelerometer", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify({
-              x: parsedAccelerometer.x,
-              y: parsedAccelerometer.y,
-              z: parsedAccelerometer.z,
-              timestamp: timestamp,
+              deviceId: device.id,
+              ...parsedAccelerometer,
+              timestamp
             }),
           });
         }
 
-        if (batteryData !== undefined && batteryData !== null) {
-          const timestamp = Math.floor(Date.now() / 1000);
-          setVoltageData({ voltage: batteryData, timestamp });
+        if (batteryData !== undefined) {
           await fetch("http://localhost:8080/api/voltage", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify({
+              deviceId: device.id,
               voltage: batteryData,
-              timestamp,
+              timestamp
             }),
           });
         }
-
-        setStatus("Receiving data...");
       } catch (error) {
-        console.error("Error processing device data:", error);
-        setStatus("Failed to process data");
+        console.error(`Error processing data for ${device.id}:`, error);
       }
     },
     []
   );
 
-  const connectBluetooth = useCallback(async () => {
-    if (!navigator.bluetooth) {
-      setStatus("Web Bluetooth not supported");
-      return;
-    }
-
-    if (!selectedDevice) {
-      setStatus("No device selected");
-      console.warn("Cannot connect: no selectedDevice set");
-      return;
-    }
-
-    try {
-      setStatus("Requesting Bluetooth device...");
-      // Use serviceUuid dynamically from selectedDevice
-      const deviceFound = await navigator.bluetooth.requestDevice({
-        filters: [{ services: [selectedDevice.serviceUuid] }],
-        optionalServices: [selectedDevice.serviceUuid],
-      });
-
-      setDevice(deviceFound);
-      setStatus("Connecting to GATT server...");
-      const server = await deviceFound.gatt!.connect();
-
-      // Use dynamic UUIDs for service and characteristics
-      const service = await server.getPrimaryService(selectedDevice.serviceUuid);
-      const notifyChar = await service.getCharacteristic(
-        selectedDevice.readNotifyCharacteristicUuid
-      );
-      const writeChar = await service.getCharacteristic(
-        selectedDevice.writeCharacteristicUuid
-      );
-
-      notifyCharRef.current = notifyChar;
-      writeCharRef.current = writeChar;
-
-      notifyChar.addEventListener(
-        "characteristicvaluechanged",
-        handleCharacteristicValueChanged
-      );
-      await notifyChar.startNotifications();
-
-      setStatus("Connected and receiving data");
-      setIsConnected(true);
-
-      sendWriteRequest();
-      startWriteInterval();
-    } catch (error: unknown) {
-      console.error("Bluetooth connection error:", error);
-      if (error instanceof Error) {
-        setStatus(`Connection failed: ${error.message}`);
-      } else {
-        setStatus("Connection failed: unknown error");
+  const connectBluetooth = useCallback(
+    async (device: Device) => {
+      if (!navigator.bluetooth) {
+        console.warn("Web Bluetooth not supported");
+        return;
       }
-      throw error;
-    }
-  }, [
-    handleCharacteristicValueChanged,
-    sendWriteRequest,
-    startWriteInterval,
-    selectedDevice,
-  ]);
 
-  const disconnectBluetooth = useCallback(async () => {
-    setStatus("Disconnecting...");
-    stopWriteInterval();
-
-    if (notifyCharRef.current) {
       try {
-        await notifyCharRef.current.stopNotifications();
-        notifyCharRef.current.removeEventListener(
+        console.log(`🔌 Connecting to ${device.name || device.id}`);
+        const deviceFound = await navigator.bluetooth.requestDevice({
+          filters: [{ services: [device.serviceUuid] }],
+          optionalServices: [device.serviceUuid],
+        });
+
+        const server = await deviceFound.gatt!.connect();
+        const service = await server.getPrimaryService(device.serviceUuid);
+
+        const notifyChar = await service.getCharacteristic(device.readNotifyCharacteristicUuid);
+        const writeChar = await service.getCharacteristic(device.writeCharacteristicUuid);
+
+        notifyCharRefs.current[device.id!] = notifyChar;
+        writeCharRefs.current[device.id!] = writeChar;
+
+        notifyChar.addEventListener(
           "characteristicvaluechanged",
-          handleCharacteristicValueChanged
+          (event) => handleCharacteristicValueChanged(event, device)
         );
+        await notifyChar.startNotifications();
+
+        setConnectedDevices(prev => ({
+          ...prev,
+          [device.id!]: {
+            device,
+            isConnected: true,
+            lastUpdateTimestamp: Date.now() / 1000
+          },
+        }));
+
+        sendWriteRequest(device.id!);
+        startWriteInterval(device.id!);
+
+        console.log(`✅ Connected to ${device.name || device.id}`);
       } catch (error) {
-        console.warn("Notification cleanup error:", error);
+        console.error(`Bluetooth connection error for ${device.id}:`, error);
       }
+    },
+    [handleCharacteristicValueChanged, sendWriteRequest, startWriteInterval]
+  );
+
+  const disconnectBluetooth = useCallback(async (deviceId: string) => {
+    console.log(`🔌 Disconnecting ${deviceId}`);
+    stopWriteInterval(deviceId);
+
+    const notifyChar = notifyCharRefs.current[deviceId];
+    if (notifyChar) {
+      try {
+        await notifyChar.stopNotifications();
+      } catch (err) {
+        console.warn(`Stop notifications error for ${deviceId}:`, err);
+      }
+      delete notifyCharRefs.current[deviceId];
     }
 
-    if (device?.gatt?.connected) {
-      device.gatt.disconnect();
-    }
-
-    setIsConnected(false);
-    setTemperatureData(null);
-    setAccelerometerData(null);
-    setVoltageData(null);
-    setDevice(null);
-    setStatus("Disconnected");
-  }, [device, handleCharacteristicValueChanged, stopWriteInterval]);
-
-  useEffect(() => {
-    return () => {
-      disconnectBluetooth();
-    };
-  }, [disconnectBluetooth]);
+    // Note: We don't store BluetoothDevice refs here, so disconnection
+    // is managed by characteristic cleanup.
+    setConnectedDevices(prev => ({
+      ...prev,
+      [deviceId]: { ...prev[deviceId], isConnected: false }
+    }));
+  }, [stopWriteInterval]);
 
   return (
     <BluetoothSensorContext.Provider
       value={{
-        status,
-        isConnected,
-        temperatureData,
-        accelerometerData,
-        voltageData,
+        connectedDevices,
         connectBluetooth,
         disconnectBluetooth,
-        lastUpdateTimestamp,
-        serviceUuid: selectedDevice?.serviceUuid ?? null,
-        readNotifyCharacteristicUuid:
-          selectedDevice?.readNotifyCharacteristicUuid ?? null,
-        writeCharacteristicUuid:
-          selectedDevice?.writeCharacteristicUuid ?? null,
-        selectedDevice,
-        setSelectedDevice,
       }}
     >
       {children}
@@ -364,8 +254,6 @@ export const BluetoothSensorProvider = ({ children }: BluetoothSensorProviderPro
 
 export const useBluetoothSensor = () => {
   const context = useContext(BluetoothSensorContext);
-  if (!context) {
-    throw new Error("useBluetoothSensor must be used within a BluetoothSensorProvider");
-  }
+  if (!context) throw new Error("useBluetoothSensor must be used within BluetoothSensorProvider");
   return context;
 };
