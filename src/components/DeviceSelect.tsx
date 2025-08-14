@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
-import { getToken } from "@/lib/auth";
+import { getToken } from "../lib/auth";
 
 interface Device {
   id: number;
@@ -30,7 +30,11 @@ interface ActiveDeviceResponse {
   writeCharacteristicUuid: string;
 }
 
-const DeviceSelect = () => {
+interface DeviceSelectProps {
+  setDeviceSelectionTrigger: React.Dispatch<React.SetStateAction<number>>;
+}
+
+const DeviceSelect: React.FC<DeviceSelectProps> = ({ setDeviceSelectionTrigger }) => {
   const [devices, setDevices] = useState<Device[]>([]);
   const [activeDeviceId, setActiveDeviceId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
@@ -38,7 +42,6 @@ const DeviceSelect = () => {
 
   const token = getToken();
 
-  // Fetch user's devices
   const fetchDevices = async () => {
     try {
       setIsLoading(true);
@@ -48,9 +51,7 @@ const DeviceSelect = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-
       if (!res.ok) throw new Error("Failed to fetch devices");
-
       const data: Device[] = await res.json();
       setDevices(data || []);
     } catch (err) {
@@ -62,7 +63,6 @@ const DeviceSelect = () => {
     }
   };
 
-  // Fetch active device
   const fetchActiveDevice = async () => {
     try {
       const res = await fetch("http://localhost:8080/api/device/active", {
@@ -71,9 +71,7 @@ const DeviceSelect = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-
       if (!res.ok) throw new Error("Failed to fetch active device");
-
       const data: ActiveDeviceResponse = await res.json();
       setActiveDeviceId(data.deviceId.toString());
     } catch (err) {
@@ -82,10 +80,13 @@ const DeviceSelect = () => {
     }
   };
 
-  // Handle device selection
   const handleDeviceSelect = async (deviceId: string) => {
     try {
       setIsSelecting(true);
+
+      // Optimistically update the select so the UI reflects the change immediately
+      setActiveDeviceId(deviceId);
+
       const res = await fetch(
         `http://localhost:8080/api/device/select?deviceId=${deviceId}`,
         {
@@ -96,29 +97,29 @@ const DeviceSelect = () => {
           },
         }
       );
-
       if (!res.ok) throw new Error("Failed to set active device");
 
+      // 🔔 Trigger the parent animation
+      setDeviceSelectionTrigger((prev) => prev + 1);
+
+      // (Optional) re-sync with server
       await fetchActiveDevice();
+
       toast.success("Device selected successfully");
     } catch (err) {
       console.error(err);
-      toast.error(
-        err instanceof Error ? err.message : "Failed to select device"
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to select device");
     } finally {
       setIsSelecting(false);
     }
   };
 
-  // Initial data fetch
   useEffect(() => {
-    const fetchData = async () => {
+    const init = async () => {
       await fetchDevices();
       await fetchActiveDevice();
     };
-
-    fetchData();
+    init();
   }, []);
 
   return (
@@ -130,18 +131,15 @@ const DeviceSelect = () => {
         disabled={isLoading || isSelecting}
       >
         <SelectTrigger className="w-[240px]">
-          <div className="flex ">
+          <div className="flex">
             {isLoading ? (
               <div className="flex items-center">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-               
               </div>
             ) : (
               <SelectValue
                 placeholder={
-                  devices.length === 0
-                    ? "No devices available"
-                    : "Select a device"
+                  devices.length === 0 ? "No devices available" : "Select a device"
                 }
               />
             )}
@@ -160,8 +158,6 @@ const DeviceSelect = () => {
           </SelectContent>
         )}
       </Select>
-
-      
     </div>
   );
 };

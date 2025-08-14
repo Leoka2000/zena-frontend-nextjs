@@ -1,7 +1,9 @@
+"use client";
+
+import React, { useState } from "react";
 import { Bluetooth, BluetoothOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,17 +14,17 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useBluetoothSensor } from "../context/useBluetoothSensor"; // adjust path if necessary
 
-const STANDARD_SERVICES: Record<string, string> = {
-  "180A": "Device Information",
-  "180F": "Battery Service",
-  "181A": "Environmental Sensing",
-  "1811": "Alert Notification",
-  "1234": "Custom Service 1",
-  "5678": "Custom Service 2",
-};
+const KNOWN_SERVICES = [
+  "0000180a-0000-1000-8000-00805f9b34fb",
+  "11111111-1111-1111-1111-111111111111",
+];
 
 const BluetoothConnectButton = () => {
+  const { connectBluetooth, disconnectBluetooth, isDeviceConnected } =
+    useBluetoothSensor();
+
   const [availableDevices, setAvailableDevices] = useState<BluetoothDevice[]>(
     []
   );
@@ -44,74 +46,66 @@ const BluetoothConnectButton = () => {
   const [deviceName, setDeviceName] = useState("My BLE Device");
   const [isCreating, setIsCreating] = useState(false);
 
-  const KNOWN_SERVICES = [
-    "0000180a-0000-1000-8000-00805f9b34fb",
-    "11111111-1111-1111-1111-111111111111",
-  ];
-
+  // Test characteristic by trying read or notifications
   const testCharacteristic = async (
     characteristic: BluetoothRemoteGATTCharacteristic
   ) => {
     try {
+      // try read
       await characteristic.readValue();
       return true;
     } catch (readError) {
-      console.log(`Read failed for ${characteristic.uuid}`);
+      // ignore read failure
     }
 
     try {
+      // try notifications
       await characteristic.startNotifications();
-      characteristic.stopNotifications();
+      await characteristic.stopNotifications();
       return true;
     } catch (notifyError) {
-      console.log(`Notifications failed for ${characteristic.uuid}`);
+      // ignore notify failure
     }
 
     return false;
   };
 
-  const discoverServicesAndCharacteristics = async (
-    device: BluetoothDevice
-  ) => {
+  const discoverServicesAndCharacteristics = async (device: BluetoothDevice) => {
     try {
       setIsDiscovering(true);
       toast.info("Discovering services...");
-
       if (!device.gatt) throw new Error("GATT server not available");
 
       const server = await device.gatt.connect();
-      console.log("Connected to GATT server");
+      console.log("Connected to GATT server for discovery");
 
-      // Get all primary services
       const services = await server.getPrimaryServices();
       console.log(`Found ${services.length} primary services`);
 
-      const notifyCharacteristics: BluetoothRemoteGATTCharacteristic[] = [];
+      const notifyChars: BluetoothRemoteGATTCharacteristic[] = [];
 
       for (const service of services) {
-        const characteristics = await service.getCharacteristics();
-
-        for (const characteristic of characteristics) {
-          if (characteristic.properties.write) {
+        const chars = await service.getCharacteristics();
+        for (const char of chars) {
+          if (char.properties.write) {
             setWriteCharacteristic({
-              uuid: characteristic.uuid,
+              uuid: char.uuid,
               serviceUuid: service.uuid,
             });
           }
-
-          if (characteristic.properties.notify) {
-            notifyCharacteristics.push(characteristic);
+          if (char.properties.notify) {
+            notifyChars.push(char);
           }
         }
       }
 
-      // Test notify characteristics
-      for (const char of notifyCharacteristics) {
-        const isWorking = await testCharacteristic(char);
-        if (isWorking) {
+      // test notify chars to pick a working one
+      for (const c of notifyChars) {
+        const ok = await testCharacteristic(c);
+        if (ok) {
           setWorkingNotifyChar({
-            uuid: char.uuid,
-            serviceUuid: char.service.uuid,
+            uuid: c.uuid,
+            serviceUuid: c.service.uuid,
           });
           break;
         }
@@ -135,6 +129,7 @@ const BluetoothConnectButton = () => {
       setWriteCharacteristic(null);
       toast.info("Scanning for BLE devices...");
 
+      // Use acceptAllDevices to improve discoverability and ask for optional services
       const device = await navigator.bluetooth.requestDevice({
         acceptAllDevices: true,
         optionalServices: KNOWN_SERVICES,
@@ -152,7 +147,7 @@ const BluetoothConnectButton = () => {
       } else {
         throw new Error("Device doesn't support GATT");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Scan error:", error);
       toast.error(
         error instanceof DOMException ? error.message : "Connection failed"
@@ -173,8 +168,9 @@ const BluetoothConnectButton = () => {
     toast.info("Disconnected from device");
   };
 
+  // Called when the user chooses to create the device record in backend
   const handleCreateDevice = async () => {
-    if (!workingNotifyChar || !writeCharacteristic) return;
+    if (!workingNotifyChar || !writeCharacteristic || !currentDevice) return;
 
     try {
       setIsCreating(true);
@@ -184,33 +180,59 @@ const BluetoothConnectButton = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`, // Add auth token
+            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
           },
           body: JSON.stringify({
             name: deviceName,
             serviceUuid: workingNotifyChar.serviceUuid,
+            // backend may expect 'notifyCharacteristicUuid' — we'll keep that name for creation
             notifyCharacteristicUuid: workingNotifyChar.uuid,
             writeCharacteristicUuid: writeCharacteristic.uuid,
           }),
         }
       );
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to create device");
+        throw new Error((data && data.message) || "Failed to create device");
       }
 
       toast.success("Device created successfully");
       setShowCreateModal(false);
-
-      // Reset form
       setDeviceName("My BLE Device");
     } catch (error: any) {
       console.error("Create error:", error);
       toast.error(error.message || "Failed to create device");
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  // NEW: connect through provider so provider will handle notifications + writes + backend posts
+  const handleConnectViaProvider = async () => {
+    if (!workingNotifyChar || !writeCharacteristic) {
+      toast.error("Missing notify or write characteristic");
+      return;
+    }
+
+    // Build Device shape expected by provider
+    const deviceForProvider = {
+      id:
+        currentDevice?.id ||
+        `${currentDevice?.name ?? "ui-device"}-${workingNotifyChar.serviceUuid}`,
+      name: currentDevice?.name ?? deviceName,
+      serviceUuid: workingNotifyChar.serviceUuid,
+      readNotifyCharacteristicUuid: workingNotifyChar.uuid,
+      writeCharacteristicUuid: writeCharacteristic.uuid,
+    };
+
+    try {
+      await connectBluetooth(deviceForProvider);
+      toast.success("Connected and streaming via provider");
+    } catch (err) {
+      console.error("Provider connect failed:", err);
+      toast.error("Failed to connect via provider");
     }
   };
 
@@ -247,6 +269,15 @@ const BluetoothConnectButton = () => {
         </Button>
       )}
 
+      {/* Show a connect-via-provider button once we have discovered working characteristics */}
+      {workingNotifyChar && writeCharacteristic && (
+        <div className="mt-2">
+          <Button onClick={handleConnectViaProvider} className="max-w-3xs">
+            Connect & Start Streaming (Provider)
+          </Button>
+        </div>
+      )}
+
       <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -266,19 +297,19 @@ const BluetoothConnectButton = () => {
             </div>
             <div className="grid gap-2">
               <Label>Service UUID</Label>
-              <div className="p-2 text-sm font-mono bg-gray-100 rounded">
+              <div className="p-2 text-sm font-mono rounded">
                 {workingNotifyChar?.serviceUuid || "Not found"}
               </div>
             </div>
             <div className="grid gap-2">
               <Label>Notify Characteristic UUID</Label>
-              <div className="p-2 text-sm font-mono bg-gray-100 rounded">
+              <div className="p-2 text-sm font-mono  rounded">
                 {workingNotifyChar?.uuid || "Not found"}
               </div>
             </div>
             <div className="grid gap-2">
               <Label>Write Characteristic UUID</Label>
-              <div className="p-2 text-sm font-mono bg-gray-100 rounded">
+              <div className="p-2 text-sm font-mono rounded">
                 {writeCharacteristic?.uuid || "Not found"}
               </div>
             </div>
@@ -294,9 +325,7 @@ const BluetoothConnectButton = () => {
             <Button
               type="button"
               onClick={handleCreateDevice}
-              disabled={
-                !workingNotifyChar || !writeCharacteristic || isCreating
-              }
+              disabled={!workingNotifyChar || !writeCharacteristic || isCreating}
             >
               {isCreating ? (
                 <>

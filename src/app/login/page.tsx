@@ -9,7 +9,7 @@ export default function LoginPage() {
         alt="Logo"
         width={124}
         height={124}
-        className="mx-auto mb-4"
+        className="mx-auto mb-8"
       />
       <LoginForm />
     </div>

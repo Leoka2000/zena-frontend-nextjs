@@ -72,16 +72,9 @@ export function RegisterForm({
   return (
     <div 
       className={cn("flex flex-col gap-6  w-full md:w-96", className)}
-      {...props}
-    >
+      {...props} >
       <Card>
-        <Image
-          src="/zanelogo.png"
-          alt="Logo"
-          width={124}
-          height={124}
-          className="mx-auto mb-4"
-        />
+       
         <CardHeader>
           <CardTitle>Create an account</CardTitle>
           <CardDescription>
@@ -89,7 +82,7 @@ export function RegisterForm({
           </CardDescription>
           {error && (
             <Alert>
-              <AlertCircleIcon className="h-4 w-4 dark:text-red-400 text-red-500" style={{color:"red"}} />
+              <AlertCircleIcon className="h-4 w-4 dark:text-red-400 text-red-500"   />
               <AlertTitle className="dark:text-red-400 text-red-500" >Error</AlertTitle>
               <AlertDescription className="dark:text-red-400 text-red-500">
                 {error}
