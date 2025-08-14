@@ -17,14 +17,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { getToken } from "@/lib/auth";
 import { toast } from "sonner";
 
 interface Device {
-  id: number;
-  name: string;
+  deviceId: number;
+  deviceName: string;
   serviceUuid: string;
   readNotifyCharacteristicUuid: string;
   writeCharacteristicUuid: string;
@@ -32,87 +30,40 @@ interface Device {
 
 export function CredentialsCard() {
   const [device, setDevice] = useState<Device | null>(null);
-  const [form, setForm] = useState({
-    name: "",
-    serviceUuid: "",
-    readNotifyCharacteristicUuid: "",
-    writeCharacteristicUuid: "",
-  });
   const [isOpen, setIsOpen] = useState(false);
 
-  // Fetch active device on mount
   useEffect(() => {
     const fetchActiveDevice = async () => {
       try {
         const token = getToken();
+        if (!token) {
+          toast.error("Authentication token missing.");
+          return;
+        }
+
         const res = await fetch("http://localhost:8080/api/device/active", {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         });
-        if (!res.ok) throw new Error("Failed to fetch active device");
-        const activeDevice: Device = await res.json();
-        setDevice(activeDevice);
-        setForm({
-          name: activeDevice.name,
-          serviceUuid: activeDevice.serviceUuid,
-          readNotifyCharacteristicUuid: activeDevice.readNotifyCharacteristicUuid,
-          writeCharacteristicUuid: activeDevice.writeCharacteristicUuid,
-        });
+
+        if (!res.ok) {
+          throw new Error(`Failed to fetch device: ${res.status}`);
+        }
+
+        const data: Device = await res.json();
+        setDevice(data);
       } catch (err) {
         console.error(err);
-        toast.error(
-          err instanceof Error ? err.message : "Failed to fetch active device"
-        );
+        toast.error("Could not fetch active device.");
       }
     };
+
     fetchActiveDevice();
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!device) {
-      toast.error("No active device available");
-      return;
-    }
-
-    try {
-      const token = getToken();
-      const res = await fetch(
-        `http://localhost:8080/api/device/list/${device.id}`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(form),
-        }
-      );
-
-      if (!res.ok) throw new Error("Failed to update device");
-      const updatedDevice: Device = await res.json();
-      setDevice(updatedDevice);
-      setForm({
-        name: updatedDevice.name,
-        serviceUuid: updatedDevice.serviceUuid,
-        readNotifyCharacteristicUuid: updatedDevice.readNotifyCharacteristicUuid,
-        writeCharacteristicUuid: updatedDevice.writeCharacteristicUuid,
-      });
-      toast.success("Device updated successfully");
-      setIsOpen(false);
-    } catch (err) {
-      console.error(err);
-      toast.error(
-        err instanceof Error ? err.message : "Failed to update device"
-      );
-    }
-  };
-
-  if (!device) return null; // Optionally show a loader
+  if (!device) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -132,7 +83,7 @@ export function CredentialsCard() {
           <CardFooter className="flex-col items-start gap-1.5 text-sm">
             <div className="flex flex-col gap-1 font-mono">
               <div className="text-xs text-muted-foreground">
-                <strong>Name:</strong> {device.name}
+                <strong>Name:</strong> {device.deviceName}
               </div>
               <div className="text-xs text-muted-foreground">
                 <strong>Service UUID:</strong> {device.serviceUuid}
@@ -149,61 +100,13 @@ export function CredentialsCard() {
       </DialogTrigger>
 
       <DialogContent>
-        <form onSubmit={handleSubmit}>
+        <form>
           <DialogHeader>
             <DialogTitle>Edit Bluetooth Credentials</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Device Name</Label>
-              <Input
-                id="name"
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                placeholder="Enter device name"
-                disabled
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="serviceUuid">Service UUID</Label>
-              <Input
-                id="serviceUuid"
-                name="serviceUuid"
-                value={form.serviceUuid}
-                onChange={handleChange}
-                placeholder="Enter service UUID"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="readNotifyCharacteristicUuid">
-                Notify Characteristic UUID
-              </Label>
-              <Input
-                id="readNotifyCharacteristicUuid"
-                name="readNotifyCharacteristicUuid"
-                value={form.readNotifyCharacteristicUuid}
-                onChange={handleChange}
-                placeholder="Enter notify characteristic UUID"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="writeCharacteristicUuid">Write Characteristic UUID</Label>
-              <Input
-                id="writeCharacteristicUuid"
-                name="writeCharacteristicUuid"
-                value={form.writeCharacteristicUuid}
-                onChange={handleChange}
-                placeholder="Enter write characteristic UUID"
-                required
-              />
-            </div>
+            {/* Form fields go here */}
           </div>
 
           <div className="flex justify-end gap-2">
