@@ -60,30 +60,63 @@ export const ChartLineInteractive = ({
 }: ChartAreaInteractiveProps) => {
   const [data, setData] = React.useState<TemperatureDataPoint[]>([])
   const [range, setRange] = React.useState("day")
+  const [deviceId, setDeviceId] = React.useState<number | null>(null)
 
   const statusColorClass =
     status === "Disconnected"
       ? "text-red-600 dark:text-red-400"
       : "text-green-600 dark:text-green-300";
 
-  const fetchHistoricalData = React.useCallback(async (selectedRange: string) => {
+  /**
+   * Fetch active device ID
+   */
+  const fetchActiveDevice = React.useCallback(async () => {
     try {
       const token = await getToken();
-      const res = await axios.get(`http://localhost:8080/api/temperature/history?range=${selectedRange}`, {
+      const res = await axios.get(`http://localhost:8080/api/device/active`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       });
+      setDeviceId(res.data.deviceId);
+    } catch (err) {
+      console.error("Failed to fetch active device:", err);
+    }
+  }, []);
+
+  /**
+   * Fetch historical temperature data filtered by deviceId and range
+   */
+  const fetchHistoricalData = React.useCallback(async (selectedRange: string, activeDeviceId: number) => {
+    try {
+      const token = await getToken();
+      const res = await axios.get(
+        `http://localhost:8080/api/temperature/history?range=${selectedRange}&deviceId=${activeDeviceId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
       setData(res.data);
     } catch (err) {
       console.error("Failed to fetch history:", err);
     }
   }, []);
 
+  // On mount, fetch active device ID
   React.useEffect(() => {
-    fetchHistoricalData(range)
-  }, [range, fetchHistoricalData])
+    fetchActiveDevice();
+  }, [fetchActiveDevice]);
+
+  // Fetch temperature history whenever range or deviceId changes
+  React.useEffect(() => {
+    if (deviceId !== null) {
+      fetchHistoricalData(range, deviceId);
+    }
+  }, [range, deviceId, fetchHistoricalData]);
 
   // Update with real-time data
   React.useEffect(() => {
@@ -93,7 +126,6 @@ export const ChartLineInteractive = ({
         temperature,
         timestamp
       }
-
       setData(prev => {
         const exists = prev.find(d => d.timestamp === timestamp)
         if (exists) return prev
@@ -104,14 +136,11 @@ export const ChartLineInteractive = ({
 
   const stats = React.useMemo(() => {
     const valid = data.filter(d => d.temperature !== null) as { temperature: number }[]
-
     if (!valid.length) return { current: null, average: null, min: null, max: null }
-
     const current = valid[valid.length - 1].temperature
     const average = valid.reduce((acc, val) => acc + val.temperature, 0) / valid.length
     const min = Math.min(...valid.map(d => d.temperature))
     const max = Math.max(...valid.map(d => d.temperature))
-
     return { current, average, min, max }
   }, [data])
 
@@ -126,7 +155,6 @@ export const ChartLineInteractive = ({
             </span>
           </p>
         </div>
-
         <div className="flex flex-col justify-center gap-1 px-6 py-4">
           <label className="text-sm text-muted-foreground mb-1">Range:</label>
           <DropdownMenu>
@@ -177,16 +205,8 @@ export const ChartLineInteractive = ({
           <AreaChart data={data} margin={{ left: 12, right: 12 }}>
             <defs>
               <linearGradient id="fillTemperature" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-temperature)"
-                  stopOpacity={0.8}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-temperature)"
-                  stopOpacity={0.1}
-                />
+                <stop offset="5%" stopColor="var(--color-temperature)" stopOpacity={0.8} />
+                <stop offset="95%" stopColor="var(--color-temperature)" stopOpacity={0.1} />
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} />

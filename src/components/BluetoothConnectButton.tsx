@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Bluetooth, BluetoothOff, Loader2 } from "lucide-react";
+import { Bluetooth, BluetoothOff, Loader2, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
@@ -264,7 +264,7 @@ const BluetoothConnectButton = () => {
           onClick={handleDisconnect}
           className="max-w-3xs cursor-pointer"
         >
-          <BluetoothOff className="mr-2 h-4 w-4" />
+          <BluetoothOff className="" />
           Disconnect
         </Button>
       )}
@@ -272,8 +272,9 @@ const BluetoothConnectButton = () => {
       {/* Show a connect-via-provider button once we have discovered working characteristics */}
       {workingNotifyChar && writeCharacteristic && (
         <div className="mt-2">
-          <Button onClick={handleConnectViaProvider} className="max-w-3xs">
-            Connect & Start Streaming (Provider)
+          <Button onClick={handleConnectViaProvider} className="w-64">
+            <Play />
+          Start Streaming
           </Button>
         </div>
       )}

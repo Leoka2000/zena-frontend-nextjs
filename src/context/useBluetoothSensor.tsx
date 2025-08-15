@@ -24,6 +24,15 @@ interface Device {
   writeCharacteristicUuid: string;
 }
 
+interface ActiveDevice {
+  deviceId: number;
+  deviceName: string;
+  serviceUuid: string;
+  readNotifyCharacteristicUuid: string;
+  writeCharacteristicUuid: string;
+  userId: number;
+}
+
 interface TemperatureData {
   temperature: number;
 }
@@ -53,6 +62,8 @@ interface BluetoothSensorContextValue {
   connectBluetooth: (device: Device) => Promise<void>;
   disconnectBluetooth: (deviceId: string) => Promise<void>;
   isDeviceConnected: (deviceId: string) => boolean;
+  activeDevice: ActiveDevice | null;
+  refreshActiveDevice: () => Promise<void>;
 }
 
 const BluetoothSensorContext =
@@ -60,14 +71,17 @@ const BluetoothSensorContext =
 
 interface BluetoothSensorProviderProps {
   children: ReactNode;
+  deviceSelectionTrigger?: number; // Add this prop to listen for device changes
 }
 
 export const BluetoothSensorProvider = ({
   children,
+  deviceSelectionTrigger,
 }: BluetoothSensorProviderProps) => {
   const [connectedDevices, setConnectedDevices] = useState<
     Record<string, ConnectedDeviceState>
   >({});
+  const [activeDevice, setActiveDevice] = useState<ActiveDevice | null>(null);
 
   // characteristic refs per device id
   const notifyCharRefs = useRef<Record<string, BluetoothRemoteGATTCharacteristic>>({});
@@ -76,6 +90,52 @@ export const BluetoothSensorProvider = ({
   const bluetoothDeviceRefs = useRef<Record<string, BluetoothDevice>>({});
   // browser timer id type is number
   const writeIntervals = useRef<Record<string, number>>({});
+
+  // Fetch active device from backend
+  const fetchActiveDevice = useCallback(async () => {
+    try {
+      const token = getToken();
+      const response = await fetch("http://localhost:8080/api/device/active", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data: ActiveDevice = await response.json();
+        setActiveDevice(data);
+        console.log("🔄 Active device updated:", data);
+        return data;
+      } else {
+        console.error("Failed to fetch active device:", response.statusText);
+        setActiveDevice(null);
+        return null;
+      }
+    } catch (error) {
+      console.error("Error fetching active device:", error);
+      setActiveDevice(null);
+      return null;
+    }
+  }, []);
+
+  // Expose refresh function for external components
+  const refreshActiveDevice = useCallback(async () => {
+    await fetchActiveDevice();
+  }, [fetchActiveDevice]);
+
+  // Fetch active device on mount
+  useEffect(() => {
+    fetchActiveDevice();
+  }, [fetchActiveDevice]);
+
+  // Listen for device selection changes from DeviceSelect component
+  useEffect(() => {
+    if (deviceSelectionTrigger !== undefined && deviceSelectionTrigger > 0) {
+      console.log("🔔 Device selection changed, refreshing active device...");
+      fetchActiveDevice();
+    }
+  }, [deviceSelectionTrigger, fetchActiveDevice]);
 
   // Helper: robust write (choose with/without response appropriately)
   const safeWrite = useCallback(
@@ -168,23 +228,15 @@ export const BluetoothSensorProvider = ({
         const token = getToken();
         const timestamp = Math.floor(Date.now() / 1000);
 
-        setConnectedDevices((prev) => ({
-          ...prev,
-          [device.id!]: {
-            ...prev[device.id!],
-            temperatureData:
-              parsedTemperature || prev[device.id!]?.temperatureData,
-            accelerometerData:
-              parsedAccelerometer || prev[device.id!]?.accelerometerData,
-            voltageData:
-              batteryData !== undefined
-                ? { voltage: batteryData, timestamp }
-                : prev[device.id!]?.voltageData,
-            lastUpdateTimestamp: timestamp,
-            device,
-            isConnected: true,
-          },
-        }));
+
+        // IMPORTANT: Use the activeDevice's numeric deviceId instead of the Bluetooth device ID
+        if (!activeDevice) {
+          console.warn("⚠️ No active device found, cannot post sensor data");
+          return;
+        }
+
+        const numericDeviceId = activeDevice.deviceId; // This is the numeric ID from database
+        console.log(`📤 Sending sensor data for device ID: ${numericDeviceId} (${activeDevice.deviceName})`);
 
         // Post to backend if data exists
         // Note: we don't block UI on these; but we await so errors are catchable
@@ -196,11 +248,19 @@ export const BluetoothSensorProvider = ({
               Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
-              deviceId: device.id,
+              deviceId: numericDeviceId, // Use numeric deviceId from database
               temperature: parsedTemperature.temperature,
               timestamp,
             }),
-          }).catch((e) =>
+          })
+          .then(response => {
+            if (!response.ok) {
+              console.error(`Temperature POST failed: ${response.status} ${response.statusText}`);
+            } else {
+              console.log(`✅ Temperature data sent successfully for device ${numericDeviceId}`);
+            }
+          })
+          .catch((e) =>
             console.error("Failed to POST temperature to backend:", e)
           );
         }
@@ -213,11 +273,19 @@ export const BluetoothSensorProvider = ({
               Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
-              deviceId: device.id,
+              deviceId: numericDeviceId, // Use numeric deviceId from database
               ...parsedAccelerometer,
               timestamp,
             }),
-          }).catch((e) =>
+          })
+          .then(response => {
+            if (!response.ok) {
+              console.error(`Accelerometer POST failed: ${response.status} ${response.statusText}`);
+            } else {
+              console.log(`✅ Accelerometer data sent successfully for device ${numericDeviceId}`);
+            }
+          })
+          .catch((e) =>
             console.error("Failed to POST accelerometer to backend:", e)
           );
         }
@@ -230,11 +298,19 @@ export const BluetoothSensorProvider = ({
               Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
-              deviceId: device.id,
+              deviceId: numericDeviceId, // Use numeric deviceId from database
               voltage: batteryData,
               timestamp,
             }),
-          }).catch((e) =>
+          })
+          .then(response => {
+            if (!response.ok) {
+              console.error(`Voltage POST failed: ${response.status} ${response.statusText}`);
+            } else {
+              console.log(`✅ Voltage data sent successfully for device ${numericDeviceId}`);
+            }
+          })
+          .catch((e) =>
             console.error("Failed to POST voltage to backend:", e)
           );
         }
@@ -242,7 +318,7 @@ export const BluetoothSensorProvider = ({
         console.error(`Error processing data for ${device.id}:`, error);
       }
     },
-    []
+    [activeDevice] // Add activeDevice as dependency
   );
 
   const connectBluetooth = useCallback(
@@ -250,6 +326,17 @@ export const BluetoothSensorProvider = ({
       if (!navigator.bluetooth) {
         console.warn("Web Bluetooth not supported in this browser");
         return;
+      }
+
+      // Ensure we have an active device before connecting
+      let currentActiveDevice = activeDevice;
+      if (!currentActiveDevice) {
+        console.log("No active device found, fetching from backend...");
+        currentActiveDevice = await fetchActiveDevice();
+        if (!currentActiveDevice) {
+          console.error("Cannot connect: no active device available");
+          return;
+        }
       }
 
       const deviceId = device.id ?? `${device.name || "ble"}-${device.serviceUuid}-${device.readNotifyCharacteristicUuid}`;
@@ -307,6 +394,7 @@ export const BluetoothSensorProvider = ({
         startWriteInterval(deviceId);
 
         console.log(`✅ Connected (provider) to ${device.name || deviceId}`);
+        console.log(`📍 Data will be sent to device ID: ${currentActiveDevice.deviceId} (${currentActiveDevice.deviceName})`);
       } catch (error) {
         console.error(`Bluetooth connection error for ${deviceId}:`, error);
         // ensure we set a disconnected state
@@ -316,7 +404,7 @@ export const BluetoothSensorProvider = ({
         }));
       }
     },
-    [handleCharacteristicValueChanged, sendWriteRequest, startWriteInterval]
+    [handleCharacteristicValueChanged, sendWriteRequest, startWriteInterval, activeDevice, fetchActiveDevice]
   );
 
   const disconnectBluetooth = useCallback(
@@ -383,6 +471,8 @@ export const BluetoothSensorProvider = ({
         connectBluetooth,
         disconnectBluetooth,
         isDeviceConnected,
+        activeDevice,
+        refreshActiveDevice,
       }}
     >
       {children}
