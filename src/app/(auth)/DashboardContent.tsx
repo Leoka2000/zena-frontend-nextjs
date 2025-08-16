@@ -6,10 +6,13 @@ import DeviceSelect from "@/components/DeviceSelect";
 import BluetoothConnectButton from "@/components/BluetoothConnectButton";
 import { BottomCardsSection } from "@/components/downer-card-section/BottomCardSection";
 import TemperatureProvider from "@/components/temperature/TemperatureProvider";
+import { AccelerometerChart } from "@/components/accelerometer/AccelerometerChart";
+import { VoltageChart } from "@/components/voltage/VoltageChart";
 
 const DashboardContent = () => {
   const [animateKey, setAnimateKey] = useState(0);
-  const [deviceSelectionTrigger, setDeviceSelectionTrigger] = useState<number>(0);
+  const [deviceSelectionTrigger, setDeviceSelectionTrigger] =
+    useState<number>(0);
 
   // When the child bumps deviceSelectionTrigger, re-mount the animated section
   useEffect(() => {
@@ -39,6 +42,12 @@ const DashboardContent = () => {
 
           <div className="mb-4 rounded-xl">
             <TemperatureProvider />
+          </div>
+          <div className="mb-4 rounded-xl">
+            <AccelerometerChart />
+          </div>
+           <div className="mb-4 rounded-xl">
+          <VoltageChart />
           </div>
         </motion.div>
       </div>

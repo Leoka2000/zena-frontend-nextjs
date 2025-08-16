@@ -19,19 +19,15 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import axios from "axios";
 import { getToken } from "@/lib/auth";
 
 interface VoltageChartProps {
-  voltage: number | null;
-  timestamp: number | null;
   status: string;
 }
 
 interface VoltageDataPoint {
   date: string;
   voltage: number | null;
-  timestamp: number | null;
 }
 
 const chartConfig = {
@@ -48,66 +44,87 @@ const ranges = [
   { label: "Last 3 months", value: "3months" },
 ];
 
-export const VoltageChart = ({
-  voltage,
-  timestamp,
-  status,
-}: VoltageChartProps) => {
+export const VoltageChart = ({ status }: VoltageChartProps) => {
   const [data, setData] = React.useState<VoltageDataPoint[]>([]);
   const [range, setRange] = React.useState("day");
+  const [deviceId, setDeviceId] = React.useState<number | null>(null);
 
   const statusColorClass =
     status === "Disconnected"
       ? "text-red-600 dark:text-red-400"
       : "text-green-600 dark:text-green-300";
 
-  const fetchHistoricalData = React.useCallback(async (selectedRange: string) => {
-    try {
-      const token = await getToken();
-      const res = await axios.get(
-        `http://localhost:8080/api/voltage/history?range=${selectedRange}`,
-        {
+  // Fetch active device once
+  React.useEffect(() => {
+    const fetchActiveDevice = async () => {
+      try {
+        const token = await getToken();
+        const res = await fetch(`http://localhost:8080/api/device/active`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-        }
-      );
-      setData(res.data);
-    } catch (err) {
-      console.error("Failed to fetch voltage history:", err);
-    }
+        });
+        if (!res.ok) throw new Error("Failed to fetch active device");
+        const body = await res.json();
+        setDeviceId(body.deviceId);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchActiveDevice();
   }, []);
 
-  React.useEffect(() => {
-    fetchHistoricalData(range);
-  }, [range, fetchHistoricalData]);
+  // Function to fetch voltage history
+  const fetchHistoricalData = React.useCallback(
+    async (selectedRange: string, activeDeviceId: number) => {
+      try {
+        const token = await getToken();
+        const res = await fetch(
+          `http://localhost:8080/api/voltage/history?range=${selectedRange}&deviceId=${activeDeviceId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        if (!res.ok) throw new Error("Failed to fetch voltage history");
+        const body = await res.json();
+        setData(body);
+      } catch (err) {
+        console.error(err);
+      }
+    },
+    []
+  );
 
-  // Update with real-time data
+  // Fetch initially + poll every 5 seconds
   React.useEffect(() => {
-    if (voltage !== null && timestamp !== null) {
-      setData(prev => {
-        const newPoint = {
-          date: new Date(timestamp * 1000).toISOString(),
-          voltage,
-          timestamp
-        };
-        
-        const existingIndex = prev.findIndex(d => d.timestamp === timestamp);
-        
-        if (existingIndex >= 0) {
-          const newData = [...prev];
-          newData[existingIndex] = newPoint;
-          return newData;
-        } else {
-          return [...prev, newPoint].sort(
-            (a, b) => (a.timestamp || 0) - (b.timestamp || 0)
-      )}
-      });
-    }
-  }, [voltage, timestamp]);
+    if (deviceId === null) return;
 
- 
+    // Initial fetch
+    fetchHistoricalData(range, deviceId);
+
+    // Poll every 5s
+    const interval = setInterval(() => {
+      fetchHistoricalData(range, deviceId);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [deviceId, range, fetchHistoricalData]);
+
+  const stats = React.useMemo(() => {
+    const valid = data.filter((d) => d.voltage !== null) as {
+      voltage: number;
+    }[];
+    if (!valid.length) return { current: null, min: null, max: null };
+    const current = valid[valid.length - 1]?.voltage;
+    const min = Math.min(...valid.map((d) => d.voltage));
+    const max = Math.max(...valid.map((d) => d.voltage));
+    return { current, min, max };
+  }, [data]);
+
   return (
     <Card className="py-4 sm:py-0">
       <CardHeader className="flex z-10 flex-col items-stretch border-b !p-0 sm:flex-row">
@@ -119,7 +136,9 @@ export const VoltageChart = ({
                 {status}
               </span>
             </p>
-            
+            {stats.current !== null && (
+              <p className="text-lg font-bold">{stats.current.toFixed(2)} V</p>
+            )}
           </div>
         </div>
 
@@ -147,6 +166,25 @@ export const VoltageChart = ({
       </CardHeader>
 
       <CardContent className="px-2 sm:p-6">
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          {stats.current !== null && (
+            <>
+              <div>
+                <p className="text-xs text-muted-foreground">Current</p>
+                <p className="text-lg font-bold">{stats.current.toFixed(2)} V</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Min</p>
+                <p className="text-lg font-bold">{stats.min?.toFixed(2)} V</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Max</p>
+                <p className="text-lg font-bold">{stats.max?.toFixed(2)} V</p>
+              </div>
+            </>
+          )}
+        </div>
+
         <ChartContainer
           config={chartConfig}
           className="aspect-auto h-[250px] w-full"
@@ -181,13 +219,18 @@ export const VoltageChart = ({
               tickMargin={8}
               minTickGap={32}
               tickFormatter={(value) => {
-                const date = new Date(value);
-                return date.toLocaleDateString("en-GB", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                });
+                try {
+                  const date = new Date(value);
+                  if (isNaN(date.getTime())) return "";
+                  return date.toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+                } catch {
+                  return "";
+                }
               }}
             />
             <ChartTooltip
@@ -195,15 +238,21 @@ export const VoltageChart = ({
                 <ChartTooltipContent
                   className="w-[150px]"
                   nameKey="voltage"
-                  labelFormatter={(value) =>
-                    new Date(value).toLocaleString("en-GB", {
-                      hour12: false,
-                      day: "2-digit",
-                      month: "2-digit",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
-                  }
+                  labelFormatter={(value) => {
+                    try {
+                      const date = new Date(value);
+                      if (isNaN(date.getTime())) return "Invalid date";
+                      return date.toLocaleString("en-GB", {
+                        hour12: false,
+                        day: "2-digit",
+                        month: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      });
+                    } catch {
+                      return "Invalid date";
+                    }
+                  }}
                   valueFormatter={(val) => `${val} V`}
                 />
               }

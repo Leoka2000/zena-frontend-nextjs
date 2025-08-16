@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import * as React from "react";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,33 +10,31 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Button } from "@/components/ui/button"
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/chart"
-import axios from "axios"
+} from "@/components/ui/chart";
+import axios from "axios";
 import { getToken } from "@/lib/auth";
 
 interface ChartAreaInteractiveProps {
-  temperature: number | null
-  timestamp: number | null
-  status: string
+  status: string;
 }
 
 interface TemperatureDataPoint {
-  date: string
-  temperature: number | null
-  timestamp: number | null
+  date: string;
+  temperature: number;
+  timestamp: number;
 }
 
 const chartConfig = {
@@ -44,32 +42,28 @@ const chartConfig = {
     label: "Temperature",
     color: "#fb7185",
   },
-} satisfies ChartConfig
+} satisfies ChartConfig;
 
 const ranges = [
   { label: "Last 24 hours", value: "day" },
   { label: "Last 7 days", value: "week" },
   { label: "Last 30 days", value: "month" },
   { label: "Last 3 months", value: "3months" },
-]
+];
 
 export const ChartLineInteractive = ({
-  temperature,
-  timestamp,
   status,
 }: ChartAreaInteractiveProps) => {
-  const [data, setData] = React.useState<TemperatureDataPoint[]>([])
-  const [range, setRange] = React.useState("day")
-  const [deviceId, setDeviceId] = React.useState<number | null>(null)
+  const [data, setData] = React.useState<TemperatureDataPoint[]>([]);
+  const [range, setRange] = React.useState("day");
+  const [deviceId, setDeviceId] = React.useState<number | null>(null);
+  const [isPolling, setIsPolling] = React.useState(true);
 
   const statusColorClass =
     status === "Disconnected"
       ? "text-red-600 dark:text-red-400"
       : "text-green-600 dark:text-green-300";
 
-  /**
-   * Fetch active device ID
-   */
   const fetchActiveDevice = React.useCallback(async () => {
     try {
       const token = await getToken();
@@ -85,14 +79,13 @@ export const ChartLineInteractive = ({
     }
   }, []);
 
-  /**
-   * Fetch historical temperature data filtered by deviceId and range
-   */
-  const fetchHistoricalData = React.useCallback(async (selectedRange: string, activeDeviceId: number) => {
+  const fetchTemperatureData = React.useCallback(async () => {
+    if (!deviceId) return;
+
     try {
       const token = await getToken();
-      const res = await axios.get(
-        `http://localhost:8080/api/temperature/history?range=${selectedRange}&deviceId=${activeDeviceId}`,
+      const res = await axios.get<TemperatureDataPoint[]>(
+        `http://localhost:8080/api/temperature/history?range=${range}&deviceId=${deviceId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -100,49 +93,62 @@ export const ChartLineInteractive = ({
           },
         }
       );
-      setData(res.data);
+      
+      // Transform and sort the data
+      const newData = res.data
+        .map(item => ({
+          ...item,
+          date: new Date(item.timestamp * 1000).toISOString()
+        }))
+        .sort((a, b) => a.timestamp - b.timestamp);
+      
+      setData(newData);
     } catch (err) {
-      console.error("Failed to fetch history:", err);
+      console.error("Failed to fetch temperature data:", err);
     }
-  }, []);
+  }, [deviceId, range]);
 
-  // On mount, fetch active device ID
+  // Polling effect
+  React.useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
+    const startPolling = () => {
+      fetchTemperatureData(); // Initial fetch
+      intervalId = setInterval(fetchTemperatureData, 5000); // Poll every 5 seconds
+    };
+
+    if (isPolling && deviceId) {
+      startPolling();
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [fetchTemperatureData, isPolling, deviceId]);
+
+  // Fetch device ID on mount
   React.useEffect(() => {
     fetchActiveDevice();
   }, [fetchActiveDevice]);
 
-  // Fetch temperature history whenever range or deviceId changes
+  // Toggle polling when component unmounts or device changes
   React.useEffect(() => {
-    if (deviceId !== null) {
-      fetchHistoricalData(range, deviceId);
-    }
-  }, [range, deviceId, fetchHistoricalData]);
-
-  // Update with real-time data
-  React.useEffect(() => {
-    if (temperature !== null && timestamp !== null) {
-      const newPoint = {
-        date: new Date(timestamp * 1000).toISOString(),
-        temperature,
-        timestamp
-      }
-      setData(prev => {
-        const exists = prev.find(d => d.timestamp === timestamp)
-        if (exists) return prev
-        return [...prev, newPoint].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0))
-      })
-    }
-  }, [temperature, timestamp])
+    return () => {
+      setIsPolling(false);
+    };
+  }, []);
 
   const stats = React.useMemo(() => {
-    const valid = data.filter(d => d.temperature !== null) as { temperature: number }[]
-    if (!valid.length) return { current: null, average: null, min: null, max: null }
-    const current = valid[valid.length - 1].temperature
-    const average = valid.reduce((acc, val) => acc + val.temperature, 0) / valid.length
-    const min = Math.min(...valid.map(d => d.temperature))
-    const max = Math.max(...valid.map(d => d.temperature))
-    return { current, average, min, max }
-  }, [data])
+    if (data.length === 0) return { current: null, average: null, min: null, max: null };
+    
+    const current = data[data.length - 1]?.temperature;
+    const sum = data.reduce((acc, val) => acc + val.temperature, 0);
+    const average = sum / data.length;
+    const min = Math.min(...data.map(d => d.temperature));
+    const max = Math.max(...data.map(d => d.temperature));
+    
+    return { current, average, min, max };
+  }, [data]);
 
   return (
     <Card className="py-4 sm:py-0">
@@ -182,19 +188,19 @@ export const ChartLineInteractive = ({
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           <div>
             <p className="text-xs text-muted-foreground">Current</p>
-            <p className="text-lg font-bold">{stats.current !== null ? `${stats.current.toFixed(2)} °C` : ""}</p>
+            <p className="text-lg font-bold">{stats.current !== null ? `${stats.current.toFixed(2)} °C` : "-"}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Average</p>
-            <p className="text-lg font-bold">{stats.average !== null ? `${stats.average.toFixed(2)} °C` : ""}</p>
+            <p className="text-lg font-bold">{stats.average !== null ? `${stats.average.toFixed(2)} °C` : "-"}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Min</p>
-            <p className="text-lg font-bold">{stats.min !== null ? `${stats.min.toFixed(2)} °C` : ""}</p>
+            <p className="text-lg font-bold">{stats.min !== null ? `${stats.min.toFixed(2)} °C` : "-"}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Max</p>
-            <p className="text-lg font-bold">{stats.max !== null ? `${stats.max.toFixed(2)} °C` : ""}</p>
+            <p className="text-lg font-bold">{stats.max !== null ? `${stats.max.toFixed(2)} °C` : "-"}</p>
           </div>
         </div>
 
@@ -224,10 +230,15 @@ export const ChartLineInteractive = ({
               tickMargin={8}
               minTickGap={32}
               tickFormatter={(value) => {
-                const date = new Date(value)
-                return date.toLocaleDateString("en-GB", {
-                  day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"
-                })
+                try {
+                  const date = new Date(value);
+                  if (isNaN(date.getTime())) return "";
+                  return date.toLocaleDateString("en-GB", {
+                    day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"
+                  });
+                } catch {
+                  return "";
+                }
               }}
             />
             <ChartTooltip
@@ -235,11 +246,17 @@ export const ChartLineInteractive = ({
                 <ChartTooltipContent
                   className="w-[150px]"
                   nameKey="temperature"
-                  labelFormatter={(value) =>
-                    new Date(value).toLocaleString("en-GB", {
-                      hour12: false, day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"
-                    })
-                  }
+                  labelFormatter={(value) => {
+                    try {
+                      const date = new Date(value);
+                      if (isNaN(date.getTime())) return "Invalid date";
+                      return date.toLocaleString("en-GB", {
+                        hour12: false, day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"
+                      });
+                    } catch {
+                      return "Invalid date";
+                    }
+                  }}
                   valueFormatter={(val) => `${val} °C`}
                 />
               }
@@ -256,5 +273,5 @@ export const ChartLineInteractive = ({
         </ChartContainer>
       </CardContent>
     </Card>
-  )
-}
+  );
+};

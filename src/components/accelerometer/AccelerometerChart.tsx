@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import axios from "axios";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 
 import {
@@ -23,14 +22,13 @@ import {
 import { getToken } from "@/lib/auth";
 
 interface AccelerometerDataPoint {
-  timestamp: number;
-  x: number;
-  y: number;
-  z: number;
+  date: string;
+  x: number | null;
+  y: number | null;
+  z: number | null;
 }
 
 interface AccelerometerChartProps {
-  liveData: AccelerometerDataPoint | null;
   status: string;
 }
 
@@ -47,58 +45,79 @@ const ranges = [
   { label: "Last 3 months", value: "3months" },
 ];
 
-export const AccelerometerChart = ({
-  liveData,
-  status,
-}: AccelerometerChartProps) => {
+export const AccelerometerChart = ({ status }: AccelerometerChartProps) => {
   const [data, setData] = React.useState<AccelerometerDataPoint[]>([]);
   const [range, setRange] = React.useState("day");
+  const [deviceId, setDeviceId] = React.useState<number | null>(null);
 
   const statusColorClass =
     status === "Disconnected"
       ? "text-red-600 dark:text-red-400"
       : "text-green-600 dark:text-green-300";
 
-  const fetchHistory = React.useCallback(async () => {
-    try {
-      const token = getToken();
-      const res = await axios.get<AccelerometerDataPoint[]>(
-        `http://localhost:8080/api/accelerometer/history?range=${range}`,
-        {
+  // Fetch active device once
+  React.useEffect(() => {
+    const fetchActiveDevice = async () => {
+      try {
+        const token = await getToken();
+        const res = await fetch(`http://localhost:8080/api/device/active`, {
           headers: {
             Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
-        }
-      );
-      setData(res.data);
-    } catch (err: unknown) {
-      console.error("Failed to fetch accelerometer data:", err);
-    }
-  }, [range]);
+        });
+        if (!res.ok) throw new Error("Failed to fetch active device");
+        const body = await res.json();
+        setDeviceId(body.deviceId);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchActiveDevice();
+  }, []);
 
-  React.useEffect(() => {
-    fetchHistory();
-  }, [fetchHistory]);
-
-  React.useEffect(() => {
-    if (liveData && liveData.timestamp) {
-      setData((prev) => {
-        const exists = prev.some((d) => d.timestamp === liveData.timestamp);
-        if (exists) return prev;
-        return [...prev, liveData].sort(
-          (a, b) => (a.timestamp || 0) - (b.timestamp || 0)
+  // Function to fetch accelerometer history
+  const fetchAccelerometerData = React.useCallback(
+    async (selectedRange: string, activeDeviceId: number) => {
+      try {
+        const token = await getToken();
+        const res = await fetch(
+          `http://localhost:8080/api/accelerometer/history?range=${selectedRange}&deviceId=${activeDeviceId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
         );
-      });
-    }
-  }, [liveData]);
+        if (!res.ok) throw new Error("Failed to fetch accelerometer data");
+        const body = await res.json();
+        setData(body);
+      } catch (err) {
+        console.error(err);
+      }
+    },
+    []
+  );
+
+  // Fetch initially + poll every 5 seconds
+  React.useEffect(() => {
+    if (deviceId === null) return;
+
+    fetchAccelerometerData(range, deviceId);
+
+    const interval = setInterval(() => {
+      fetchAccelerometerData(range, deviceId);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [deviceId, range, fetchAccelerometerData]);
 
   const stats = React.useMemo(() => {
     if (!data.length) return { current: null };
     const latest = data[data.length - 1];
     return {
-      current: latest
-        ? { x: latest.x, y: latest.y, z: latest.z }
-        : null,
+      current: latest ? { x: latest.x, y: latest.y, z: latest.z } : null,
     };
   }, [data]);
 
@@ -107,13 +126,11 @@ export const AccelerometerChart = ({
       <CardHeader className="flex z-10 flex-col items-stretch border-b !p-0 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-1 py-4 mb-4 px-6 pb-3 sm:pb-0">
           <CardTitle>Accelerometer</CardTitle>
-          <div className="flex items-center gap-2">
-            <p className="leading-4 text-sm py-1">
-              <span className={`text-sm font-semibold ${statusColorClass}`}>
-                {status}
-              </span>
-            </p>
-          </div>
+          <p className="leading-4 text-sm py-1">
+            <span className={`text-sm font-semibold ${statusColorClass}`}>
+              {status}
+            </span>
+          </p>
         </div>
 
         <div className="flex flex-col justify-center gap-1 px-6 py-4">
@@ -121,14 +138,14 @@ export const AccelerometerChart = ({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="text-sm capitalize">
-                {ranges.find((r) => r.value === range)?.label}
+                {ranges.find(r => r.value === range)?.label}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56">
               <DropdownMenuLabel>Select Range</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuRadioGroup value={range} onValueChange={setRange}>
-                {ranges.map((r) => (
+                {ranges.map(r => (
                   <DropdownMenuRadioItem key={r.value} value={r.value}>
                     {r.label}
                   </DropdownMenuRadioItem>
@@ -145,15 +162,15 @@ export const AccelerometerChart = ({
             <>
               <div>
                 <p className="text-xs text-muted-foreground">X</p>
-                <p className="text-lg font-bold">{stats.current.x}</p>
+                <p className="text-lg font-bold">{stats.current.x?.toFixed(2)}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Y</p>
-                <p className="text-lg font-bold">{stats.current.y}</p>
+                <p className="text-lg font-bold">{stats.current.y?.toFixed(2)}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Z</p>
-                <p className="text-lg font-bold">{stats.current.z}</p>
+                <p className="text-lg font-bold">{stats.current.z?.toFixed(2)}</p>
               </div>
             </>
           )}
@@ -166,26 +183,44 @@ export const AccelerometerChart = ({
           <LineChart data={data} margin={{ left: 12, right: 12 }}>
             <CartesianGrid vertical={false} />
             <XAxis
-              dataKey="timestamp"
+              dataKey="date"
               tickLine={false}
               axisLine={false}
               tickMargin={8}
               minTickGap={32}
               tickFormatter={(value) => {
-                const ts = Number(value);
-                if (!ts || isNaN(ts)) return "?";
-                return new Date(ts * 1000).toLocaleDateString("en-GB", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                });
+                try {
+                  const date = new Date(value);
+                  if (isNaN(date.getTime())) return "";
+                  return date.toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+                } catch {
+                  return "";
+                }
               }}
             />
             <YAxis />
             <ChartTooltip
               content={
-                <ChartTooltipContent className="w-[180px]" nameKey="axis" />
+                <ChartTooltipContent
+                  className="w-[180px]"
+                  labelFormatter={(value) => {
+                    try {
+                      return new Date(value).toLocaleString("en-GB", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      });
+                    } catch {
+                      return "Invalid date";
+                    }
+                  }}
+                />
               }
             />
             <Line
