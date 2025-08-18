@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -32,20 +31,23 @@ interface ActiveDeviceResponse {
 
 interface DeviceSelectProps {
   setDeviceSelectionTrigger: React.Dispatch<React.SetStateAction<number>>;
+  deviceSelectionTrigger: number;
 }
 
-const DeviceSelect: React.FC<DeviceSelectProps> = ({ setDeviceSelectionTrigger }) => {
+const DeviceSelect: React.FC<DeviceSelectProps> = ({
+  setDeviceSelectionTrigger,
+  deviceSelectionTrigger,
+}) => {
   const [devices, setDevices] = useState<Device[]>([]);
   const [activeDeviceId, setActiveDeviceId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSelecting, setIsSelecting] = useState(false);
-
   const token = getToken();
 
   const fetchDevices = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch("http://localhost:8080/api/device/list", {
+      const res = await fetch("https://api.zane.hu/api/device/list", {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -65,7 +67,7 @@ const DeviceSelect: React.FC<DeviceSelectProps> = ({ setDeviceSelectionTrigger }
 
   const fetchActiveDevice = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/device/active", {
+      const res = await fetch("https://api.zane.hu/api/device/active", {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -83,12 +85,10 @@ const DeviceSelect: React.FC<DeviceSelectProps> = ({ setDeviceSelectionTrigger }
   const handleDeviceSelect = async (deviceId: string) => {
     try {
       setIsSelecting(true);
-
-      // Optimistically update the select so the UI reflects the change immediately
       setActiveDeviceId(deviceId);
 
       const res = await fetch(
-        `http://localhost:8080/api/device/select?deviceId=${deviceId}`,
+        `https://api.zane.hu/api/device/select?deviceId=${deviceId}`,
         {
           method: "POST",
           headers: {
@@ -97,14 +97,11 @@ const DeviceSelect: React.FC<DeviceSelectProps> = ({ setDeviceSelectionTrigger }
           },
         }
       );
+
       if (!res.ok) throw new Error("Failed to set active device");
 
-      // 🔔 Trigger the parent animation
       setDeviceSelectionTrigger((prev) => prev + 1);
-
-      // (Optional) re-sync with server
       await fetchActiveDevice();
-
       toast.success("Device selected successfully");
     } catch (err) {
       console.error(err);
@@ -120,7 +117,7 @@ const DeviceSelect: React.FC<DeviceSelectProps> = ({ setDeviceSelectionTrigger }
       await fetchActiveDevice();
     };
     init();
-  }, []);
+  }, [deviceSelectionTrigger]); // 🔥 refetch whenever trigger changes
 
   return (
     <div className="mb-5">
@@ -145,6 +142,7 @@ const DeviceSelect: React.FC<DeviceSelectProps> = ({ setDeviceSelectionTrigger }
             )}
           </div>
         </SelectTrigger>
+
         {devices.length > 0 && (
           <SelectContent>
             <SelectGroup>

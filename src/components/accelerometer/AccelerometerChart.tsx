@@ -60,7 +60,7 @@ export const AccelerometerChart = ({ status }: AccelerometerChartProps) => {
     const fetchActiveDevice = async () => {
       try {
         const token = await getToken();
-        const res = await fetch(`http://localhost:8080/api/device/active`, {
+        const res = await fetch(`https://api.zane.hu/api/device/active`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -82,7 +82,7 @@ export const AccelerometerChart = ({ status }: AccelerometerChartProps) => {
       try {
         const token = await getToken();
         const res = await fetch(
-          `http://localhost:8080/api/accelerometer/history?range=${selectedRange}&deviceId=${activeDeviceId}`,
+          `https://api.zane.hu/api/accelerometer/history?range=${selectedRange}&deviceId=${activeDeviceId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

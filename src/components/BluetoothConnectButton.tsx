@@ -1,7 +1,6 @@
 "use client";
-
 import React, { useState } from "react";
-import { Bluetooth, BluetoothOff, Loader2, Play } from "lucide-react";
+import { Bluetooth, BluetoothOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
@@ -14,26 +13,26 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useBluetoothSensor } from "../context/useBluetoothSensor"; // adjust path if necessary
+import { useBluetoothSensor } from "../context/useBluetoothSensor";
+
+interface BluetoothConnectButtonProps {
+  onDeviceCreated?: () => void; // callback to notify dashboard
+}
 
 const KNOWN_SERVICES = [
   "0000180a-0000-1000-8000-00805f9b34fb",
   "11111111-1111-1111-1111-111111111111",
 ];
 
-const BluetoothConnectButton = () => {
-  const { connectBluetooth, disconnectBluetooth, isDeviceConnected } =
-    useBluetoothSensor();
-
-  const [availableDevices, setAvailableDevices] = useState<BluetoothDevice[]>(
-    []
-  );
+const BluetoothConnectButton: React.FC<BluetoothConnectButtonProps> = ({
+  onDeviceCreated,
+}) => {
+  const { connectBluetooth, disconnectBluetooth } = useBluetoothSensor();
+  const [availableDevices, setAvailableDevices] = useState<BluetoothDevice[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [localConnected, setLocalConnected] = useState(false);
-  const [currentDevice, setCurrentDevice] = useState<BluetoothDevice | null>(
-    null
-  );
+  const [currentDevice, setCurrentDevice] = useState<BluetoothDevice | null>(null);
   const [workingNotifyChar, setWorkingNotifyChar] = useState<{
     uuid: string;
     serviceUuid: string;
@@ -45,28 +44,18 @@ const BluetoothConnectButton = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [deviceName, setDeviceName] = useState("My BLE Device");
   const [isCreating, setIsCreating] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
 
-  // Test characteristic by trying read or notifications
-  const testCharacteristic = async (
-    characteristic: BluetoothRemoteGATTCharacteristic
-  ) => {
+  const testCharacteristic = async (characteristic: BluetoothRemoteGATTCharacteristic) => {
     try {
-      // try read
       await characteristic.readValue();
       return true;
-    } catch (readError) {
-      // ignore read failure
-    }
-
+    } catch {}
     try {
-      // try notifications
       await characteristic.startNotifications();
       await characteristic.stopNotifications();
       return true;
-    } catch (notifyError) {
-      // ignore notify failure
-    }
-
+    } catch {}
     return false;
   };
 
@@ -77,21 +66,14 @@ const BluetoothConnectButton = () => {
       if (!device.gatt) throw new Error("GATT server not available");
 
       const server = await device.gatt.connect();
-      console.log("Connected to GATT server for discovery");
-
       const services = await server.getPrimaryServices();
-      console.log(`Found ${services.length} primary services`);
 
       const notifyChars: BluetoothRemoteGATTCharacteristic[] = [];
-
       for (const service of services) {
         const chars = await service.getCharacteristics();
         for (const char of chars) {
           if (char.properties.write) {
-            setWriteCharacteristic({
-              uuid: char.uuid,
-              serviceUuid: service.uuid,
-            });
+            setWriteCharacteristic({ uuid: char.uuid, serviceUuid: service.uuid });
           }
           if (char.properties.notify) {
             notifyChars.push(char);
@@ -99,14 +81,10 @@ const BluetoothConnectButton = () => {
         }
       }
 
-      // test notify chars to pick a working one
       for (const c of notifyChars) {
         const ok = await testCharacteristic(c);
         if (ok) {
-          setWorkingNotifyChar({
-            uuid: c.uuid,
-            serviceUuid: c.service.uuid,
-          });
+          setWorkingNotifyChar({ uuid: c.uuid, serviceUuid: c.service.uuid });
           break;
         }
       }
@@ -127,16 +105,13 @@ const BluetoothConnectButton = () => {
       setAvailableDevices([]);
       setWorkingNotifyChar(null);
       setWriteCharacteristic(null);
-      toast.info("Scanning for BLE devices...");
 
-      // Use acceptAllDevices to improve discoverability and ask for optional services
       const device = await navigator.bluetooth.requestDevice({
         acceptAllDevices: true,
         optionalServices: KNOWN_SERVICES,
       });
 
       if (!device) throw new Error("No device selected");
-
       setAvailableDevices([device]);
       setCurrentDevice(device);
 
@@ -149,9 +124,7 @@ const BluetoothConnectButton = () => {
       }
     } catch (error: any) {
       console.error("Scan error:", error);
-      toast.error(
-        error instanceof DOMException ? error.message : "Connection failed"
-      );
+      toast.error(error instanceof DOMException ? error.message : "Connection failed");
     } finally {
       setIsScanning(false);
     }
@@ -165,17 +138,17 @@ const BluetoothConnectButton = () => {
     setCurrentDevice(null);
     setWorkingNotifyChar(null);
     setWriteCharacteristic(null);
+    setIsStreaming(false);
     toast.info("Disconnected from device");
   };
 
-  // Called when the user chooses to create the device record in backend
   const handleCreateDevice = async () => {
     if (!workingNotifyChar || !writeCharacteristic || !currentDevice) return;
-
     try {
       setIsCreating(true);
+
       const response = await fetch(
-        "http://localhost:8080/api/device/create-from-bluetooth",
+        "https://api.zane.hu/api/device/create-from-bluetooth",
         {
           method: "POST",
           headers: {
@@ -185,7 +158,6 @@ const BluetoothConnectButton = () => {
           body: JSON.stringify({
             name: deviceName,
             serviceUuid: workingNotifyChar.serviceUuid,
-            // backend may expect 'notifyCharacteristicUuid' — we'll keep that name for creation
             notifyCharacteristicUuid: workingNotifyChar.uuid,
             writeCharacteristicUuid: writeCharacteristic.uuid,
           }),
@@ -193,7 +165,6 @@ const BluetoothConnectButton = () => {
       );
 
       const data = await response.json().catch(() => ({}));
-
       if (!response.ok) {
         throw new Error((data && data.message) || "Failed to create device");
       }
@@ -201,6 +172,9 @@ const BluetoothConnectButton = () => {
       toast.success("Device created successfully");
       setShowCreateModal(false);
       setDeviceName("My BLE Device");
+
+      // 🔥 trigger refresh in DeviceSelect
+      if (onDeviceCreated) onDeviceCreated();
     } catch (error: any) {
       console.error("Create error:", error);
       toast.error(error.message || "Failed to create device");
@@ -209,76 +183,38 @@ const BluetoothConnectButton = () => {
     }
   };
 
-  // NEW: connect through provider so provider will handle notifications + writes + backend posts
-  const handleConnectViaProvider = async () => {
-    if (!workingNotifyChar || !writeCharacteristic) {
-      toast.error("Missing notify or write characteristic");
-      return;
-    }
-
-    // Build Device shape expected by provider
-    const deviceForProvider = {
-      id:
-        currentDevice?.id ||
-        `${currentDevice?.name ?? "ui-device"}-${workingNotifyChar.serviceUuid}`,
-      name: currentDevice?.name ?? deviceName,
-      serviceUuid: workingNotifyChar.serviceUuid,
-      readNotifyCharacteristicUuid: workingNotifyChar.uuid,
-      writeCharacteristicUuid: writeCharacteristic.uuid,
-    };
-
-    try {
-      await connectBluetooth(deviceForProvider);
-      toast.success("Connected and streaming via provider");
-    } catch (err) {
-      console.error("Provider connect failed:", err);
-      toast.error("Failed to connect via provider");
-    }
-  };
-
   return (
     <div className="flex flex-col font-sm space-y-2 mb-5">
       {!localConnected ? (
-        <>
-          <Button
-            onClick={scanForDevices}
-            className="max-w-3xs cursor-pointer"
-            disabled={isScanning || isDiscovering}
-          >
-            {isScanning || isDiscovering ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {isScanning ? "Scanning..." : "Discovering..."}
-              </>
-            ) : (
-              <>
-                <Bluetooth className="mr-2 h-4 w-4" />
-                Scan for Devices
-              </>
-            )}
-          </Button>
-        </>
+        <Button
+          onClick={scanForDevices}
+          className="max-w-6xl w-60"
+          disabled={isScanning || isDiscovering}
+        >
+          {isScanning || isDiscovering ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {isScanning ? "Scanning..." : "Discovering..."}
+            </>
+          ) : (
+            <>
+              <Bluetooth className="mr-2 h-4 w-4" />
+              Scan for Devices
+            </>
+          )}
+        </Button>
       ) : (
         <Button
           variant="destructive"
           onClick={handleDisconnect}
-          className="max-w-3xs cursor-pointer"
+          className="max-w-6xl w-60"
         >
-          <BluetoothOff className="" />
+          <BluetoothOff className="mr-2 h-4 w-4" />
           Disconnect
         </Button>
       )}
 
-      {/* Show a connect-via-provider button once we have discovered working characteristics */}
-      {workingNotifyChar && writeCharacteristic && (
-        <div className="mt-2">
-          <Button onClick={handleConnectViaProvider} className="w-64">
-            <Play />
-          Start Streaming
-          </Button>
-        </div>
-      )}
-
+      {/* Create device modal */}
       <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -287,6 +223,7 @@ const BluetoothConnectButton = () => {
               Would you like to add this new device to your collection?
             </DialogDescription>
           </DialogHeader>
+
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="device-name">Device Name</Label>
@@ -304,7 +241,7 @@ const BluetoothConnectButton = () => {
             </div>
             <div className="grid gap-2">
               <Label>Notify Characteristic UUID</Label>
-              <div className="p-2 text-sm font-mono  rounded">
+              <div className="p-2 text-sm font-mono rounded">
                 {workingNotifyChar?.uuid || "Not found"}
               </div>
             </div>
@@ -315,16 +252,12 @@ const BluetoothConnectButton = () => {
               </div>
             </div>
           </div>
+
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowCreateModal(false)}
-            >
+            <Button variant="outline" onClick={() => setShowCreateModal(false)}>
               Cancel
             </Button>
             <Button
-              type="button"
               onClick={handleCreateDevice}
               disabled={!workingNotifyChar || !writeCharacteristic || isCreating}
             >

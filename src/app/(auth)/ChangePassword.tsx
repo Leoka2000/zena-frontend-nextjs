@@ -33,7 +33,7 @@ export default function ChangePasswordForm() {
         const token = getToken();
         if (!token) throw new Error("No authentication token found");
 
-        const response = await fetch("http://localhost:8080/users/me", {
+        const response = await fetch("https://api.zane.hu/users/me", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -86,7 +86,7 @@ export default function ChangePasswordForm() {
       const token = getToken();
       if (!token) throw new Error("No authentication token found");
 
-      const response = await fetch("http://localhost:8080/users/me/password", {
+      const response = await fetch("https://api.zane.hu/users/me/password", {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,

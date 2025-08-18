@@ -20,6 +20,8 @@ export function BottomCardsSection() {
     <>
      
           <CredentialsCard />
+          <TemperatureCard />
+          <AccelerometerCard />
       
       
     </>

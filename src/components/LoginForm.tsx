@@ -34,7 +34,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
     setError("")
 
     try {
-      const res = await fetch("http://localhost:8080/auth/login", {
+      const res = await fetch("https://api.zane.hu/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

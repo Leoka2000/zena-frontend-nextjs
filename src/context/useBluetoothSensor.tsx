@@ -95,7 +95,7 @@ export const BluetoothSensorProvider = ({
   const fetchActiveDevice = useCallback(async () => {
     try {
       const token = getToken();
-      const response = await fetch("http://localhost:8080/api/device/active", {
+      const response = await fetch("https://api.zane.hu/api/device/active", {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -241,7 +241,7 @@ export const BluetoothSensorProvider = ({
         // Post to backend if data exists
         // Note: we don't block UI on these; but we await so errors are catchable
         if (parsedTemperature?.temperature !== undefined) {
-          fetch("http://localhost:8080/api/temperature", {
+          fetch("https://api.zane.hu/api/temperature", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -266,7 +266,7 @@ export const BluetoothSensorProvider = ({
         }
 
         if (parsedAccelerometer) {
-          fetch("http://localhost:8080/api/accelerometer", {
+          fetch("https://api.zane.hu/api/accelerometer", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -291,7 +291,7 @@ export const BluetoothSensorProvider = ({
         }
 
         if (batteryData !== undefined) {
-          fetch("http://localhost:8080/api/voltage", {
+          fetch("https://api.zane.hu/api/voltage", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

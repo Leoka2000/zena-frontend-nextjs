@@ -6,18 +6,11 @@ export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div
-      style={{
-        height: "100vh",
-        overflow: "hidden",
-        margin: 0,
-        padding: 0,
-      }}
-    >
-      <section className="w-full relative isolate px-3 from-gray-900 via-black to-gray-800 antialiased bg-gradient-to-br lg:px-6">
+    <div>
+      <section className="w-full  min-h-screen relative isolate px-3 from-gray-900 via-black to-gray-800 antialiased bg-gradient-to-br lg:px-6">
         <div
           aria-hidden="true"
-          className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80"
+          className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80 animate-blur-move"
         >
           <div
             style={{
@@ -149,9 +142,9 @@ export default function Home() {
                 </span>
               </h1>
               <p className="mx-auto mt-6 text-sm text-left text-gray-200 md:text-center md:mt-12 sm:text-base md:max-w-xl md:text-lg xl:text-xl">
-                Expertise in designing highly reliable electronic circuits, now with
-                a dashboard for you to analyse and monitor the activity of your
-                devices.
+                Expertise in designing highly reliable electronic circuits, now
+                with a dashboard for you to analyse and monitor the activity of
+                your devices.
               </p>
               <div className="relative flex items-center mx-auto mt-10 overflow-hidden text-left rounded-md md:max-w-sm md:text-center">
                 <div className="flex flex-col justify-center items-center mt-8 space-y-4 text-center sm:flex-row sm:space-y-0 sm:space-x-4">
@@ -214,7 +207,10 @@ export default function Home() {
               <a href="#" className="block px-3 py-2 rounded hover:bg-gray-700">
                 Contact
               </a>
-              <a href="login" className="block px-3 py-2 rounded hover:bg-gray-700">
+              <a
+                href="login"
+                className="block px-3 py-2 rounded hover:bg-gray-700"
+              >
                 Login
               </a>
               <a

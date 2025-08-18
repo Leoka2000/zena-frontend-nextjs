@@ -28,6 +28,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import Image from "next/image";
+import { ThemeToggle } from "./ThemeToggle";
 
 const data = {
   user: {
@@ -149,7 +150,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={data.navMain} />
       </SidebarContent>
       <SidebarFooter>
+
         <NavUser />
+
       </SidebarFooter>
     </Sidebar>
   );

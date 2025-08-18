@@ -1,32 +1,37 @@
 "use client";
-
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import DeviceSelect from "@/components/DeviceSelect";
 import BluetoothConnectButton from "@/components/BluetoothConnectButton";
 import { BottomCardsSection } from "@/components/downer-card-section/BottomCardSection";
-import TemperatureProvider from "@/components/temperature/TemperatureProvider";
 import { AccelerometerChart } from "@/components/accelerometer/AccelerometerChart";
 import { VoltageChart } from "@/components/voltage/VoltageChart";
+import { DeleteDeviceBtn } from "@/components/DeleteDeviceBtn";
 
 const DashboardContent = () => {
   const [animateKey, setAnimateKey] = useState(0);
-  const [deviceSelectionTrigger, setDeviceSelectionTrigger] =
-    useState<number>(0);
+  const [deviceSelectionTrigger, setDeviceSelectionTrigger] = useState<number>(0);
 
-  // When the child bumps deviceSelectionTrigger, re-mount the animated section
   useEffect(() => {
-    if (deviceSelectionTrigger === 0) return; // ignore initial mount
+    if (deviceSelectionTrigger === 0) return;
     setAnimateKey((prev) => prev + 1);
   }, [deviceSelectionTrigger]);
 
   return (
     <div className="gap-4 px-6 py-2">
       <div>
-        <BluetoothConnectButton />
-        <DeviceSelect setDeviceSelectionTrigger={setDeviceSelectionTrigger} />
+        <header className="flex items-start justify-between gap-2">
+          <BluetoothConnectButton
+            onDeviceCreated={() => setDeviceSelectionTrigger((prev) => prev + 1)}
+          />
+          <DeleteDeviceBtn />
+        </header>
 
-        {/* Animated Section */}
+        <DeviceSelect
+          setDeviceSelectionTrigger={setDeviceSelectionTrigger}
+          deviceSelectionTrigger={deviceSelectionTrigger}
+        />
+
         <motion.div
           key={animateKey}
           initial={{ opacity: 0, y: 20 }}
@@ -41,13 +46,11 @@ const DashboardContent = () => {
           </div>
 
           <div className="mb-4 rounded-xl">
-            <TemperatureProvider />
+            <VoltageChart />
           </div>
+
           <div className="mb-4 rounded-xl">
             <AccelerometerChart />
-          </div>
-           <div className="mb-4 rounded-xl">
-          <VoltageChart />
           </div>
         </motion.div>
       </div>

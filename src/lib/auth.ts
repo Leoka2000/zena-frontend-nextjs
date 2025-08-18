@@ -8,7 +8,7 @@ export async function fetchCurrentUser() {
     throw new Error("No auth token found")
   }
 
-  const res = await fetch("http://localhost:8080/users/me", {
+  const res = await fetch("https://api.zane.hu/users/me", {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,

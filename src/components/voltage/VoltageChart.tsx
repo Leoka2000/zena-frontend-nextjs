@@ -59,7 +59,7 @@ export const VoltageChart = ({ status }: VoltageChartProps) => {
     const fetchActiveDevice = async () => {
       try {
         const token = await getToken();
-        const res = await fetch(`http://localhost:8080/api/device/active`, {
+        const res = await fetch(`https://api.zane.hu/api/device/active`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -81,7 +81,7 @@ export const VoltageChart = ({ status }: VoltageChartProps) => {
       try {
         const token = await getToken();
         const res = await fetch(
-          `http://localhost:8080/api/voltage/history?range=${selectedRange}&deviceId=${activeDeviceId}`,
+          `https://api.zane.hu/api/voltage/history?range=${selectedRange}&deviceId=${activeDeviceId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -126,7 +126,7 @@ export const VoltageChart = ({ status }: VoltageChartProps) => {
   }, [data]);
 
   return (
-    <Card className="py-4 sm:py-0">
+    <Card className="py-4 sm:py-0 ">
       <CardHeader className="flex z-10 flex-col items-stretch border-b !p-0 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-1 py-4 mb-4 px-6 pb-3 sm:pb-0">
           <CardTitle>Battery Voltage</CardTitle>
@@ -136,9 +136,7 @@ export const VoltageChart = ({ status }: VoltageChartProps) => {
                 {status}
               </span>
             </p>
-            {stats.current !== null && (
-              <p className="text-lg font-bold">{stats.current.toFixed(2)} V</p>
-            )}
+            
           </div>
         </div>
 
@@ -167,22 +165,7 @@ export const VoltageChart = ({ status }: VoltageChartProps) => {
 
       <CardContent className="px-2 sm:p-6">
         <div className="grid grid-cols-3 gap-3 mb-4">
-          {stats.current !== null && (
-            <>
-              <div>
-                <p className="text-xs text-muted-foreground">Current</p>
-                <p className="text-lg font-bold">{stats.current.toFixed(2)} V</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Min</p>
-                <p className="text-lg font-bold">{stats.min?.toFixed(2)} V</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Max</p>
-                <p className="text-lg font-bold">{stats.max?.toFixed(2)} V</p>
-              </div>
-            </>
-          )}
+         
         </div>
 
         <ChartContainer

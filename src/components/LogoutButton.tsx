@@ -12,7 +12,7 @@ export function LogoutButton() {
   const handleLogout = async () => {
     try {
       // Simple POST request without any headers or token
-      await fetch("http://localhost:8080/auth/logout", {
+      await fetch("https://api.zane.hu/auth/logout", {
         method: "POST",
         credentials: "include", // Only needed if using cookies
       });

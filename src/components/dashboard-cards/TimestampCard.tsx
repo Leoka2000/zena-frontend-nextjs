@@ -27,7 +27,7 @@ export function TimestampCard() {
           return;
         }
 
-        const res = await fetch("http://localhost:8080/api/temperature/history", {
+        const res = await fetch("https://api.zane.hu/api/temperature/history", {
           headers: {
             "Authorization": `Bearer ${token}`,
           },

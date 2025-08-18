@@ -13,7 +13,7 @@ export function NavSecondary() {
     <SidebarGroup>
       <SidebarGroupContent>
         <SidebarMenu>
-          <ThemeToggle />
+
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>

@@ -25,6 +25,7 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
+import { ThemeToggle } from "./ThemeToggle";
 
 export function NavMain({
   items,
@@ -64,6 +65,7 @@ export function NavMain({
             Notifications
           </SidebarMenuButton>
         </SidebarMenuItem>
+    
       </SidebarMenu>
     </SidebarGroup>
   );

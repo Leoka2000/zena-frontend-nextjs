@@ -43,7 +43,7 @@ export function RegisterForm({
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8080/auth/signup", {
+      const res = await fetch("https://api.zane.hu/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, username }),
@@ -82,7 +82,7 @@ export function RegisterForm({
           </CardDescription>
           {error && (
             <Alert>
-              <AlertCircleIcon className="h-4 w-4 dark:text-red-400 text-red-500"   />
+              <AlertCircleIcon className="h-4 w-4 dark:text-red-400 text-red-500"  style={{color: "var(--color-red-400)"}} />
               <AlertTitle className="dark:text-red-400 text-red-500" >Error</AlertTitle>
               <AlertDescription className="dark:text-red-400 text-red-500">
                 {error}

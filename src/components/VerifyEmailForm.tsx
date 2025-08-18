@@ -54,7 +54,7 @@ export function VerifyEmailForm() {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:8080/auth/verify", {
+      const res = await fetch("https://api.zane.hu/auth/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, verificationCode }),
@@ -80,7 +80,7 @@ export function VerifyEmailForm() {
 
     try {
       const res = await fetch(
-        `http://localhost:8080/auth/resend?email=${email}`,
+        `https://api.zane.hu/auth/resend?email=${email}`,
         {
           method: "POST",
         }

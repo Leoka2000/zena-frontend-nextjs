@@ -15,11 +15,7 @@ export default function AuthLayout({
 }) {
   const router = useRouter();
 
-  useEffect(() => {
-    if (!isAuthenticated()) {
-      router.push("/login");
-    }
-  }, []);
+
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem> 

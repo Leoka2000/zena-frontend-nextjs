@@ -33,7 +33,7 @@ export function AccountContent() {
           throw new Error("No authentication token found");
         }
 
-        const response = await fetch("http://localhost:8080/users/me", {
+        const response = await fetch("https://api.zane.hu/users/me", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -80,7 +80,7 @@ export function AccountContent() {
       if (!token) {
         throw new Error("No authentication token found");
       }
-      const response = await fetch("http://localhost:8080/users/me", {
+      const response = await fetch("https://api.zane.hu/users/me", {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
