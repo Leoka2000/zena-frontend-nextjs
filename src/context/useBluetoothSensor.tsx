@@ -82,7 +82,7 @@ export const BluetoothSensorProvider = ({
     Record<string, ConnectedDeviceState>
   >({});
   const [activeDevice, setActiveDevice] = useState<ActiveDevice | null>(null);
-
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   // characteristic refs per device id
   const notifyCharRefs = useRef<Record<string, BluetoothRemoteGATTCharacteristic>>({});
   const writeCharRefs = useRef<Record<string, BluetoothRemoteGATTCharacteristic>>({});
@@ -95,7 +95,7 @@ export const BluetoothSensorProvider = ({
   const fetchActiveDevice = useCallback(async () => {
     try {
       const token = getToken();
-      const response = await fetch("https://api.zane.hu/api/device/active", {
+      const response = await fetch(`${API_BASE_URL}/api/device/active`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -144,7 +144,7 @@ export const BluetoothSensorProvider = ({
         // Prefer writeValueWithResponse if available
         // Some browsers expose these methods as optional; use as any to call if present.
         // If not available, fallback to writeValue (legacy) or writeValueWithoutResponse.
-        const anyChar = char as any;
+        const anyChar = char as string;
         if (anyChar.writeValueWithResponse) {
           await anyChar.writeValueWithResponse(buffer);
           return;
@@ -241,7 +241,7 @@ export const BluetoothSensorProvider = ({
         // Post to backend if data exists
         // Note: we don't block UI on these; but we await so errors are catchable
         if (parsedTemperature?.temperature !== undefined) {
-          fetch("https://api.zane.hu/api/temperature", {
+          fetch(`${API_BASE_URL}/api/temperature`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -266,7 +266,7 @@ export const BluetoothSensorProvider = ({
         }
 
         if (parsedAccelerometer) {
-          fetch("https://api.zane.hu/api/accelerometer", {
+          fetch(`${API_BASE_URL}/api/accelerometer`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -291,7 +291,7 @@ export const BluetoothSensorProvider = ({
         }
 
         if (batteryData !== undefined) {
-          fetch("https://api.zane.hu/api/voltage", {
+          fetch(`${API_BASE_URL}/api/voltage`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

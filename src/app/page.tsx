@@ -7,7 +7,7 @@ export default function Home() {
 
   return (
     <div>
-      <section className="w-full  min-h-screen relative isolate px-3 from-gray-900 via-black to-gray-800 antialiased bg-gradient-to-br lg:px-6">
+      <section className="w-full min-h-screen overflow-x-clip relative isolate px-3 from-gray-900 via-black to-gray-800 antialiased bg-gradient-to-br bg-neutral-900 lg:px-6">
         <div
           aria-hidden="true"
           className="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80 animate-blur-move"
@@ -31,8 +31,8 @@ export default function Home() {
                 <Image
                   src="/zanelogo.png"
                   alt="Logo"
-                  width={120}
-                  height={120}
+                  width={150}
+                  height={150}
                   className="mx-auto mt-2"
                 />
               </a>
@@ -61,7 +61,7 @@ export default function Home() {
                   <span className="absolute bottom-0 w-0 h-px duration-300 ease-out translate-y-px group-hover:left-0 left-1/2 group-hover:w-full bg-gradient-to-r from-gray-700 via-gray-500 to-gray-700"></span>
                 </a>
                 <a
-                  href="#"
+                  href="https://zane.hu/contact/" target="_blank"
                   className="relative inline-block w-full h-full px-4 py-5 mx-2 font-medium leading-tight text-center duration-300 ease-out md:py-2 group hover:text-white md:w-auto md:px-2 lg:mx-3 md:text-center"
                 >
                   <span>Contact</span>
@@ -91,7 +91,7 @@ export default function Home() {
 
               {/* Mobile menu button */}
               <div
-                className="absolute right-0 z-50 flex flex-col items-end translate-y-1.5 w-10 h-10 p-2 mr-4 rounded-full cursor-pointer md:hidden hover:bg-gray-200/10 hover:bg-opacity-10"
+                className="absolute right-0 z-50 flex flex-col items-end text-gray-200 translate-y-1.5 w-10 h-10 p-2 mr-4 rounded-full cursor-pointer md:hidden hover:bg-gray-200/10 hover:bg-opacity-10"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 aria-label="Toggle menu"
               >
@@ -134,7 +134,7 @@ export default function Home() {
             }`}
           >
             {/* Page content */}
-            <div className="container px-6 py-32 mt-5 mx-auto md:text-center md:px-4">
+            <div className="container px-6 md:py-32 py-8 mt-5 mx-auto md:text-center md:px-4">
               <h1 className="text-4xl font-extrabold leading-none tracking-tight text-white sm:text-5xl md:text-6xl xl:text-7xl">
                 <span className="block">
                   Simplify the way you <br />
@@ -146,24 +146,24 @@ export default function Home() {
                 with a dashboard for you to analyse and monitor the activity of
                 your devices.
               </p>
-              <div className="relative flex items-center mx-auto mt-10 overflow-hidden text-left rounded-md md:max-w-sm md:text-center">
-                <div className="flex flex-col justify-center items-center mt-8 space-y-4 text-center sm:flex-row sm:space-y-0 sm:space-x-4">
+              <div className="relative flex items-center mx-auto md:mt-10 mt-3 overflow-hidden text-left rounded-md md:max-w-sm md:text-center">
+                <div className="flex flex-col justify-center items-center mt-8  text-center sm:flex-row sm:space-y-0 sm:space-x-4">
                   <span className="inline-flex relative w-full md:w-auto">
                     <a
-                      href="https://zane.hu/"
-                      target="_blank"
-                      className="inline-flex justify-center items-center px-8 py-4 w-full transition text-base font-medium leading-6 text-white bg-gray-900 rounded-full border border-transparent xl:px-10 md:w-auto hover:bg-gray-800 "
-                      rel="noreferrer"
+                      href="register"
+                      className="inline-flex justify-center items-center px-8 py-4 mt-2 w-full text-base font-medium leading-6 text-gray-900 bg-emerald-300 rounded-full border border-transparent xl:px-10 md:w-auto transition hover:bg-emerald-200 "
                     >
-                      Main website
+                      Get started
                     </a>
                   </span>
                   <span className="inline-flex relative w-full md:w-auto">
                     <a
-                      href="register"
-                      className="inline-flex justify-center items-center px-8 py-4 w-full text-base font-medium leading-6 text-gray-900 bg-emerald-300 rounded-full border border-transparent xl:px-10 md:w-auto transition hover:bg-emerald-200 "
+                      href="https://zane.hu/"
+                      target="_blank"
+                      className="inline-flex justify-center items-center px-8 py-4  my-2 transition text-base font-medium leading-6 text-white bg-gray-900 rounded-full border border-transparent xl:px-10 md:w-auto hover:bg-gray-800 "
+                      rel="noreferrer"
                     >
-                      Get started
+                      Main website
                     </a>
                   </span>
                 </div>
@@ -204,7 +204,7 @@ export default function Home() {
               <a href="#" className="block px-3 py-2 rounded hover:bg-gray-700">
                 Blog
               </a>
-              <a href="#" className="block px-3 py-2 rounded hover:bg-gray-700">
+              <a href="https://zane.hu/contact/" target="_blank" className="block px-3 py-2 rounded hover:bg-gray-700">
                 Contact
               </a>
               <a

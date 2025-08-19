@@ -36,7 +36,7 @@ export function VerifyEmailForm() {
 
   const [resendLoading, setResendLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(30);
-
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   // Countdown effect
   useEffect(() => {
     if (resendCooldown > 0) {
@@ -54,7 +54,7 @@ export function VerifyEmailForm() {
     setError("");
 
     try {
-      const res = await fetch("https://api.zane.hu/auth/verify", {
+      const res = await fetch(`${API_BASE_URL}/auth/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, verificationCode }),
@@ -80,7 +80,7 @@ export function VerifyEmailForm() {
 
     try {
       const res = await fetch(
-        `https://api.zane.hu/auth/resend?email=${email}`,
+        `${API_BASE_URL}/auth/resend?email=${email}`,
         {
           method: "POST",
         }

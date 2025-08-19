@@ -16,7 +16,7 @@ import { formatElapsedTime, getToken } from "@/lib/utils";
 export function TimestampCard() {
   const [elapsed, setElapsed] = useState("");
   const [formattedTime, setFormattedTime] = useState("Loading...");
-
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   // Fetch latest timestamp from backend
   useEffect(() => {
     async function fetchLatestTimestamp() {
@@ -27,7 +27,7 @@ export function TimestampCard() {
           return;
         }
 
-        const res = await fetch("https://api.zane.hu/api/temperature/history", {
+        const res = await fetch(`${API_BASE_URL}/api/temperature/history`, {
           headers: {
             "Authorization": `Bearer ${token}`,
           },

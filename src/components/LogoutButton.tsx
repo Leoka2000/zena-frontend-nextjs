@@ -8,11 +8,11 @@ import { LogOut } from "lucide-react";
 
 export function LogoutButton() {
   const router = useRouter();
-
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   const handleLogout = async () => {
     try {
       // Simple POST request without any headers or token
-      await fetch("https://api.zane.hu/auth/logout", {
+      await fetch(`${API_BASE_URL}/auth/logout`, {
         method: "POST",
         credentials: "include", // Only needed if using cookies
       });

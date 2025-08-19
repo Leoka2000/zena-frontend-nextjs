@@ -20,13 +20,13 @@ export function TemperatureCard() {
   const [elapsed, setElapsed] = useState("");
   const [previousTemperature, setPreviousTemperature] = useState<number | null>(null);
   const [temperatureChange, setTemperatureChange] = useState<number | null>(null);
-
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   // Fetch the latest historical temperature when component mounts
   useEffect(() => {
     const fetchLatestTemperature = async () => {
       try {
         const token = getToken();
-        const res = await fetch("https://api.zane.hu/api/temperatures/history", {
+        const res = await fetch(`${API_BASE_URL}/api/temperatures/history`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -108,7 +108,7 @@ export function TemperatureCard() {
             : "No data yet"}
         </CardTitle>
         <CardAction>
-             <span className="flex bg-neutral-50 shadow-sm text-gray-500 text-xs font-medium me-2 px-2 py-1 rounded-lg dark:bg-neutral-800 dark:text-neutral-400 border dark:border-neutral-700">
+             <span className="flex bg-neutral-50 shadow-sm text-gray-500 text-xs font-medium me-2 px-2 py-1 rounded-lg dark:bg-neutral-800 dark:text-neutral-400 border-neutral-300 border dark:border-neutral-700">
             <ThermometerSun size={25} strokeWidth={1.2} />
       
               </span>

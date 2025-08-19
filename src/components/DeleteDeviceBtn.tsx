@@ -7,10 +7,11 @@ export function DeleteDeviceBtn() {
     <>
       <Button
         variant="outline"
-        className="transition hover:bg-red-100 hover:text-red-500 shadow-xs dark:text-red-400 dark:hover:text-red-500 hover:border-red-300  text-red-400"
+        className="transition hover:bg-red-100 hover:text-red-500 shadow-xs bg-red-100 border-red-300 dark:text-0 dark:hover:text-red-500 hover:border-red-300  text-red-400"
       >
+        
         <Trash2 />
-        Delete device
+    Delete device
       </Button>
     </>
   );

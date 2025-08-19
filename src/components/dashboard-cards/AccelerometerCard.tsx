@@ -33,12 +33,13 @@ export function AccelerometerCard() {
     y: null as number | null,
     z: null as number | null,
   });
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   // Fetch the latest stored accelerometer record from backend on mount
   useEffect(() => {
     const fetchLatestAccelerometer = async () => {
       try {
-        const res = await fetch("https://api.zane.hu/api/accelerometer/history");
+        const res = await fetch(`${API_BASE_URL}/api/accelerometer/history`);
         if (!res.ok) throw new Error("Failed to fetch accelerometer history");
         const data: AccelerometerRecord[] = await res.json();
         if (data.length > 0) {
@@ -149,7 +150,7 @@ export function AccelerometerCard() {
           </div>
         </div>
         <CardAction>
-          <span className="flex bg-neutral-50 shadow-sm text-gray-500 text-xs font-medium me-2 px-2 py-1 rounded-lg dark:bg-neutral-800 dark:text-neutral-400 border dark:border-neutral-700">
+          <span className="flex bg-neutral-50 shadow-sm text-gray-500 text-xs font-medium me-2 px-2 py-1 rounded-lg dark:bg-neutral-800 dark:text-neutral-400 border-neutral-300 border dark:border-neutral-700">
             <LineSquiggle size={25} strokeWidth={1.2}/>
           </span>
         </CardAction>

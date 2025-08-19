@@ -1,73 +1,83 @@
-"use client"
+"use client";
 
-import { useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import Image from "next/image"
-import Link from "next/link"
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import Image from "next/image";
+import Link from "next/link";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircleIcon, Loader2Icon } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { setToken, isAuthenticated } from "@/lib/auth"
+} from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircleIcon, CircleX, Loader2Icon } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { setToken, isAuthenticated } from "@/lib/auth";
 
-export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
-  const router = useRouter()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
-
-
+export function LoginForm({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
     try {
-      const res = await fetch("https://api.zane.hu/auth/login", {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-      })
+      });
 
       if (res.ok) {
-        const data = await res.json()
-        setToken(data.token)
-        router.push("/dashboard") // 👈 Redirect after login
+        const data = await res.json();
+        setToken(data.token);
+        router.push("/dashboard"); // 👈 Redirect after login
       } else {
-        setError("Invalid credentials")
+        setError("Invalid credentials");
       }
     } catch {
-      setError("An unexpected error occurred.")
+      setError("An unexpected error occurred.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className={cn("flex flex-col gap-6 w-full md:w-96", className)} {...props}>
+    <div
+      className={cn("flex flex-col gap-6 w-full md:w-96", className)}
+      {...props}
+    >
       <Card>
-
         <CardHeader>
           <CardTitle>Login to your account</CardTitle>
           <CardDescription>
             Enter your email below to login to your account
           </CardDescription>
           {error && (
-            <Alert >
-              <AlertCircleIcon className="h-4 w-4 dark:text-red-400 text-red-500" style={{color:"var(--color-red-400)"}}/>
-              <AlertTitle className="dark:text-red-400 text-red-500">Error</AlertTitle>
-              <AlertDescription className="dark:text-red-400 text-red-500">{error}</AlertDescription>
+            <Alert className="flex bg-red-100 shadow-md  items-center">
+              <CircleX size={250}
+                className=" dark:text-red-300"
+                style={{ color: "var(--color-red-800)", width: "1.1rem", height: "1.1rem", marginBlockStart: "-0.25rem" }}
+                
+              />
+
+              <AlertDescription className="dark:text-red-300   text-red-800">
+                {error}
+              </AlertDescription>
             </Alert>
           )}
         </CardHeader>
@@ -76,35 +86,47 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
             <div className="flex flex-col gap-5">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
               </div>
               <div className="grid gap-2 mb-6">
                 <a
-                    href="#"
-                    className="ml-auto inline-block gap-0 text-sm underline-offset-4 hover:underline"
-                  >
-                    Forgot your password?
-                  </a>
+                  href="#"
+                  className="ml-auto inline-block gap-0 text-sm underline-offset-4 hover:underline"
+                >
+                  Forgot your password?
+                </a>
                 <Label htmlFor="password">Password</Label>
-                
-                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
+                {loading && (
+                  <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 {loading ? "Please wait" : "Login"}
               </Button>
             </div>
-             <div className="mt-4 text-center text-sm">
+            <div className="mt-4 text-center text-sm">
               Don&apos;t have an account?{" "}
-          
-       <Link href="/register" className="underline underline-offset-4">
+              <Link href="/register" className="underline underline-offset-4">
                 Sign up
-       
               </Link>
             </div>
           </form>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

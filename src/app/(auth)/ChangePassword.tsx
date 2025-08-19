@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Save } from "lucide-react";
+import { Loader2Icon, Save } from "lucide-react";
 import { toast } from "sonner";
 import { getToken } from "@/lib/auth";
 import { AppUser } from "@/types/AppUser";
@@ -26,14 +26,14 @@ export default function ChangePasswordForm() {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const token = getToken();
         if (!token) throw new Error("No authentication token found");
 
-        const response = await fetch("https://api.zane.hu/users/me", {
+        const response = await fetch(`${API_BASE_URL}/users/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -86,7 +86,7 @@ export default function ChangePasswordForm() {
       const token = getToken();
       if (!token) throw new Error("No authentication token found");
 
-      const response = await fetch("https://api.zane.hu/users/me/password", {
+      const response = await fetch(`${API_BASE_URL}/users/me/password`, {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -192,12 +192,12 @@ export default function ChangePasswordForm() {
               <Button type="submit" disabled={submitting}>
                 {submitting ? (
                   <>
-                    <Save className="animate-spin mr-2" />
+                        <Loader2Icon className="animate-spin" />
                     Changing...
                   </>
                 ) : (
                   <>
-                    <Save className="mr-2" />
+                    <Save className="" />
                     Change Password
                   </>
                 )}

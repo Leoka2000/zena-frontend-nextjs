@@ -50,7 +50,7 @@ export const ChartLineInteractive = ({ status }: ChartAreaInteractiveProps) => {
   const [range, setRange] = React.useState("day");
   const [deviceId, setDeviceId] = React.useState<number | null>(null);
   const [isPolling, setIsPolling] = React.useState(true);
-
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   const statusColorClass =
     status === "Disconnected"
       ? "text-red-600 dark:text-red-400"
@@ -59,7 +59,7 @@ export const ChartLineInteractive = ({ status }: ChartAreaInteractiveProps) => {
   const fetchActiveDevice = React.useCallback(async () => {
     try {
       const token = await getToken();
-      const res = await axios.get(`https://api.zane.hu/api/device/active`, {
+      const res = await axios.get(`${API_BASE_URL}/api/device/active`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -77,7 +77,7 @@ export const ChartLineInteractive = ({ status }: ChartAreaInteractiveProps) => {
     try {
       const token = await getToken();
       const res = await axios.get<TemperatureDataPoint[]>(
-        `https://api.zane.hu/api/temperature/history?range=${range}&deviceId=${deviceId}`,
+       `${API_BASE_URL}/api/temperature/history?range=${range}&deviceId=${deviceId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

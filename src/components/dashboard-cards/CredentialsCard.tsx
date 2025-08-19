@@ -23,7 +23,7 @@ interface Device {
 
 export function CredentialsCard() {
   const [device, setDevice] = useState<Device | null>(null);
-
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   useEffect(() => {
     const fetchActiveDevice = async () => {
       try {
@@ -33,7 +33,7 @@ export function CredentialsCard() {
           return;
         }
 
-        const res = await fetch("https://api.zane.hu/api/device/active", {
+        const res = await fetch(`${API_BASE_URL}/api/device/active`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -65,7 +65,7 @@ export function CredentialsCard() {
           Credentials:
         </CardTitle>
         <CardAction>
-          <span className="flex bg-neutral-50 shadow-sm text-gray-500 text-xs font-medium me-2 px-2 py-1 rounded-lg dark:bg-neutral-800 dark:text-neutral-400 border dark:border-neutral-700">
+          <span className="flex bg-neutral-50 shadow-sm text-gray-500 text-xs font-medium me-2 px-2 py-1 rounded-lg dark:bg-neutral-800 dark:text-neutral-400 border-neutral-300 border  dark:border-neutral-700">
             <MonitorCog size={25} strokeWidth={1.2} />
           </span>
         </CardAction>

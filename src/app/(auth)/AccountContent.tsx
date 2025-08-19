@@ -25,6 +25,10 @@ export function AccountContent() {
     email: "",
   });
 
+
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -33,7 +37,7 @@ export function AccountContent() {
           throw new Error("No authentication token found");
         }
 
-        const response = await fetch("https://api.zane.hu/users/me", {
+        const response = await fetch(`${API_BASE_URL}/users/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -80,7 +84,7 @@ export function AccountContent() {
       if (!token) {
         throw new Error("No authentication token found");
       }
-      const response = await fetch("https://api.zane.hu/users/me", {
+      const response = await fetch(`${API_BASE_URL}/users/me`, {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,

@@ -31,7 +31,7 @@ import { useRouter } from "next/navigation";
 export function NavUser() {
   const { isMobile } = useSidebar();
   const router = useRouter();
-
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -43,7 +43,7 @@ export function NavUser() {
         const token = getToken();
         if (!token) throw new Error("No authentication token found");
 
-        const response = await fetch("https://api.zane.hu/users/me", {
+        const response = await fetch(`${API_BASE_URL}/users/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 export async function fetchCurrentUser() {
   const token = getToken()
 
@@ -8,7 +8,7 @@ export async function fetchCurrentUser() {
     throw new Error("No auth token found")
   }
 
-  const res = await fetch("https://api.zane.hu/users/me", {
+  const res = await fetch(`${API_BASE_URL}/users/me`, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,

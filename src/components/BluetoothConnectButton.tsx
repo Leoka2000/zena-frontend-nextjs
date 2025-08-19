@@ -36,7 +36,7 @@ const BluetoothConnectButton: React.FC<BluetoothConnectButtonProps> = ({
 }) => {
   const { connectBluetooth, disconnectBluetooth, isDeviceConnected } =
     useBluetoothSensor();
-
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   const [availableDevices, setAvailableDevices] = useState<BluetoothDevice[]>(
     []
   );
@@ -156,7 +156,7 @@ const BluetoothConnectButton: React.FC<BluetoothConnectButtonProps> = ({
       } else {
         throw new Error("Device doesn't support GATT");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Scan error:", error);
       toast.error(
         error instanceof DOMException ? error.message : "Connection failed"
@@ -184,7 +184,7 @@ const BluetoothConnectButton: React.FC<BluetoothConnectButtonProps> = ({
     try {
       setIsCreating(true);
       const response = await fetch(
-        "https://api.zane.hu/api/device/create-from-bluetooth",
+        `${API_BASE_URL}/api/device/create-from-bluetooth`,
         {
           method: "POST",
           headers: {
@@ -210,7 +210,7 @@ const BluetoothConnectButton: React.FC<BluetoothConnectButtonProps> = ({
       setShowCreateModal(false);
       setDeviceName("My BLE Device");
       if (onDeviceCreated) onDeviceCreated();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Create error:", error);
       toast.error(error.message || "Failed to create device");
     } finally {

@@ -43,11 +43,11 @@ const DeviceSelect: React.FC<DeviceSelectProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [isSelecting, setIsSelecting] = useState(false);
   const token = getToken();
-
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   const fetchDevices = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch("https://api.zane.hu/api/device/list", {
+      const res = await fetch( `${API_BASE_URL}/api/device/list`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -67,7 +67,7 @@ const DeviceSelect: React.FC<DeviceSelectProps> = ({
 
   const fetchActiveDevice = async () => {
     try {
-      const res = await fetch("https://api.zane.hu/api/device/active", {
+      const res = await fetch(`${API_BASE_URL}/api/device/active`, {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -88,7 +88,7 @@ const DeviceSelect: React.FC<DeviceSelectProps> = ({
       setActiveDeviceId(deviceId);
 
       const res = await fetch(
-        `https://api.zane.hu/api/device/select?deviceId=${deviceId}`,
+        `${API_BASE_URL}/api/device/select?deviceId=${deviceId}`,
         {
           method: "POST",
           headers: {

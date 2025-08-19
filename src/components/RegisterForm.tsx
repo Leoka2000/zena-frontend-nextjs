@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +15,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircleIcon, Loader2Icon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import Image from "next/image";
 import Link from "next/link";
 
 export function RegisterForm({
@@ -30,11 +29,13 @@ export function RegisterForm({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    // Front-end password match check
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
       return;
@@ -43,7 +44,7 @@ export function RegisterForm({
     setLoading(true);
 
     try {
-      const res = await fetch("https://api.zane.hu/auth/signup", {
+      const res = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, username }),
@@ -69,12 +70,14 @@ export function RegisterForm({
     }
   };
 
+  useEffect(() => {
+    console.log("API Base URL:", process.env.NEXT_PUBLIC_API_BASE_URL);
+  }, []);
+
+  
   return (
-    <div 
-      className={cn("flex flex-col gap-6  w-full md:w-96", className)}
-      {...props} >
+    <div className={cn("flex flex-col gap-6 w-full md:w-96", className)} {...props}>
       <Card>
-       
         <CardHeader>
           <CardTitle>Create an account</CardTitle>
           <CardDescription>
@@ -82,9 +85,9 @@ export function RegisterForm({
           </CardDescription>
           {error && (
             <Alert>
-              <AlertCircleIcon className="h-4 w-4 dark:text-red-400 text-red-500"  style={{color: "var(--color-red-400)"}} />
-              <AlertTitle className="dark:text-red-400 text-red-500" >Error</AlertTitle>
-              <AlertDescription className="dark:text-red-400 text-red-500">
+              <AlertCircleIcon className="h-4 w-4 text-red-500 dark:text-red-400" />
+              <AlertTitle className="text-red-500 dark:text-red-400">Error</AlertTitle>
+              <AlertDescription className="text-red-500 dark:text-red-400">
                 {error}
               </AlertDescription>
             </Alert>
@@ -134,9 +137,7 @@ export function RegisterForm({
               </div>
 
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading && (
-                  <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                )}
+                {loading && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
                 {loading ? "Please wait" : "Register"}
               </Button>
             </div>

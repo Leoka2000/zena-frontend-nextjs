@@ -187,21 +187,21 @@ body {
 
 @keyframes blurMove {
                 0% {
-                    transform: translateX(-50%) translateY(800px) scale(1);
+                    transform: translateX(-50%) translateY(500px) scale(1);
                     opacity: 1;
                 }
 
                 50% {
-                    transform: translateX(-25%) translateY(-500px) scale(1);
+                    transform: translateX(25%) translateY(-200px) scale(1);
                     opacity: 1;
                 }
 
                 100% {
-                    transform: translateX(-50%) translateY(1000px) scale(1);
+                    transform: translateX(50%) translateY(200px) scale(1);
                     opacity: 1;
                 }
             }
 
             .animate-blur-move {
-                animation: blurMove 16s infinite ease-in-out;
+                animation: blurMove 10s infinite ease-in-out;
             }

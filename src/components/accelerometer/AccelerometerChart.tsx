@@ -49,7 +49,7 @@ export const AccelerometerChart = ({ status }: AccelerometerChartProps) => {
   const [data, setData] = React.useState<AccelerometerDataPoint[]>([]);
   const [range, setRange] = React.useState("day");
   const [deviceId, setDeviceId] = React.useState<number | null>(null);
-
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   const statusColorClass =
     status === "Disconnected"
       ? "text-red-600 dark:text-red-400"
@@ -60,7 +60,7 @@ export const AccelerometerChart = ({ status }: AccelerometerChartProps) => {
     const fetchActiveDevice = async () => {
       try {
         const token = await getToken();
-        const res = await fetch(`https://api.zane.hu/api/device/active`, {
+        const res = await fetch(`${API_BASE_URL}/api/device/active`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -82,7 +82,7 @@ export const AccelerometerChart = ({ status }: AccelerometerChartProps) => {
       try {
         const token = await getToken();
         const res = await fetch(
-          `https://api.zane.hu/api/accelerometer/history?range=${selectedRange}&deviceId=${activeDeviceId}`,
+          `${API_BASE_URL}/api/accelerometer/history?range=${selectedRange}&deviceId=${activeDeviceId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -123,7 +123,7 @@ export const AccelerometerChart = ({ status }: AccelerometerChartProps) => {
 
   return (
     <Card className="py-4 sm:py-0">
-      <CardHeader className="flex z-10 flex-col items-stretch border-b !p-0 sm:flex-row">
+      <CardHeader className="flex z-10 flex-col items-stretch dark:border-b-neutral-800 border-b border-b-neutral-200 !p-0 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-1 py-4 mb-4 px-6 pb-3 sm:pb-0">
           <CardTitle>Accelerometer</CardTitle>
           <p className="leading-4 text-sm py-1">
