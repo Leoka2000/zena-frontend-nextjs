@@ -71,7 +71,7 @@ export function LoginForm({
             <Alert className="flex bg-red-100 shadow-md  items-center">
               <CircleX size={250}
                 className=" dark:text-red-300"
-                style={{ color: "var(--color-red-800)", width: "1.1rem", height: "1.1rem", marginBlockStart: "-0.25rem" }}
+                style={{ color: "var(--color-red-500)", width: "1.1rem", height: "1.1rem", marginBlockStart: "-0.25rem" }}
                 
               />
 

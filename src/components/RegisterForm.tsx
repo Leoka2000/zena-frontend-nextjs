@@ -12,7 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircleIcon, Loader2Icon } from "lucide-react";
+import { AlertCircleIcon, CircleX, Loader2Icon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
@@ -84,10 +84,14 @@ export function RegisterForm({
             Sign up with your email and password
           </CardDescription>
           {error && (
-            <Alert>
-              <AlertCircleIcon className="h-4 w-4 text-red-500 dark:text-red-400" />
-              <AlertTitle className="text-red-500 dark:text-red-400">Error</AlertTitle>
-              <AlertDescription className="text-red-500 dark:text-red-400">
+             <Alert className="flex bg-red-100 shadow-md  items-center">
+              <CircleX size={250}
+                className=" dark:text-red-300"
+                style={{ color: "var(--color-red-500)", width: "1.1rem", height: "1.1rem", marginBlockStart: "-0.25rem" }}
+                
+              />
+
+              <AlertDescription className="dark:text-red-300   text-red-800">
                 {error}
               </AlertDescription>
             </Alert>
